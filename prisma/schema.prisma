@@ -1,0 +1,76 @@
+// Base de datos: SQLite por defecto (un solo archivo, cero configuración).
+// Para producción multiusuario real, cambia el provider a "postgresql"
+// y DATABASE_URL a tu instancia (ej. Supabase, Neon, RDS) — el resto del
+// código no cambia.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  nombre    String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model Student {
+  id                   String   @id @default(cuid())
+  nombre               String
+  matricula            String   @unique
+  carrera              String
+  seccion              String?
+  email                String?
+  telefono             String?
+  inasistencias        Int      @default(0)
+  rendimiento          String   @default("medio") // alto | medio | bajo
+  evaluacionesPerdidas Int      @default(0)
+  riesgoManual         String?  // verde | amarillo | rojo | null (automático)
+  abandono             Boolean  @default(false)
+  createdAt            DateTime @default(now())
+
+  atenciones   Atencion[]
+  derivaciones Derivacion[]
+}
+
+model Atencion {
+  id                          String    @id @default(cuid())
+  studentId                   String
+  student                     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  fecha                       DateTime
+  responsable                 String
+  tipo                        String    // Académica | Financiera | Personal | Psicosocial | Otra
+  tema                        String
+  duracionMin                 Int
+  observaciones               String?
+  acuerdos                    String?
+  estado                      String    @default("abierto") // abierto | seguimiento | cerrado
+  resueltoPrimerContacto      Boolean   @default(false)
+  fechaSeguimientoComprometido DateTime?
+  seguimientoCumplido         Boolean?
+  fechaCierre                 DateTime?
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+
+  derivaciones Derivacion[]
+}
+
+model Derivacion {
+  id                    String    @id @default(cuid())
+  studentId             String
+  student               Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  atencionId            String?
+  atencion              Atencion? @relation(fields: [atencionId], references: [id])
+  area                  String    // Apoyo académico | Área psicosocial | Financiamiento / Aranceles | Otra
+  fecha                 DateTime
+  estado                String    @default("pendiente") // pendiente | en-gestion | resuelta
+  notas                 String?
+  fechaResolucion       DateTime?
+  seguimientoPosterior  String?
+  createdAt             DateTime  @default(now())
+}
