@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { computeRisk, StudentDTO, AtencionDTO } from "@/lib/logic";
 import { RiskChip, initials, fmtDate, Topbar } from "@/components/ui";
 import StudentFormModal from "@/components/StudentFormModal";
+import StudentCSVImport from "@/components/StudentCSVImport";
 import Link from "next/link";
 
 export default async function EstudiantesPage() {
@@ -15,7 +16,7 @@ export default async function EstudiantesPage() {
 
   return (
     <>
-      <Topbar title="Estudiantes" subtitle="Registro y ficha de cada estudiante en seguimiento." action={<StudentFormModal />} />
+      <Topbar title="Estudiantes" subtitle="Registro y ficha de cada estudiante en seguimiento." action={<div style={{ display: "flex", gap: 8 }}><StudentCSVImport /><StudentFormModal /></div>} />
       <div className="content">
         <div className="card">
           {students.length === 0 ? (
