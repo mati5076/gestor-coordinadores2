@@ -92,6 +92,38 @@ una nueva).
 - Se monta una sola vez en `components/AppShell.tsx`, así que se ve en
   cualquier pantalla protegida (no en `/login` ni `/registro`).
 
+## Colores INACAP
+
+La paleta institucional (rojo corporativo `#E30613`, gris carbón `#2B2B2B` y blanco)
+está definida como variables CSS al inicio de `app/globals.css` (`--primary`, `--nav`, etc.),
+así que se puede ajustar en un solo lugar. Los gráficos usan los mismos colores en
+`components/DashboardCharts.tsx`. Los semáforos de riesgo (verde/amarillo/rojo) se mantienen
+porque comunican estado, no marca.
+
+## Alertas por correo al coordinador
+
+En **Configuración** (`/configuracion`) hay una opción para que las alertas de riesgo
+también lleguen por correo al coordinador:
+
+1. Activa *"Enviar también las alertas al correo del coordinador"* y escribe su correo.
+2. Usa *"Enviar correo de prueba"* para comprobar que llega.
+
+Cómo funciona:
+- Al abrir la app se envía **un solo correo-resumen** con los estudiantes en riesgo que aún no
+  se habían avisado (o que subieron de medio a alto). No se repite el aviso en cada recarga
+  (tabla `AlertEmailLog`); si un estudiante sale del riesgo y vuelve a entrar, se avisa de nuevo.
+- *"Reenviar todas las alertas vigentes"* manda todas, ignorando el historial.
+- Para avisar aunque nadie abra la app, programa un cron (Vercel Cron, cron-job.org…) que haga
+  `GET /api/cron/alertas-correo` con el header `Authorization: Bearer <CRON_SECRET>`.
+
+Requisitos: completa `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` en `.env`
+(por ejemplo Gmail con contraseña de aplicación u Office 365). Luego:
+
+```bash
+npm install            # instala nodemailer
+npx prisma db push     # crea las tablas AlertSettings y AlertEmailLog
+```
+
 ## Estructura
 
 ```

@@ -7,9 +7,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -74,4 +73,22 @@ model Derivacion {
   fechaResolucion       DateTime?
   seguimientoPosterior  String?
   createdAt             DateTime  @default(now())
+}
+
+// Configuración global de la app (una sola fila, id = "global").
+// Controla si las alertas de riesgo también se envían por correo al coordinador.
+model AlertSettings {
+  id               String   @id @default("global")
+  emailEnabled     Boolean  @default(false)
+  coordinatorEmail String?
+  updatedAt        DateTime @updatedAt
+}
+
+// Registro de a quién ya se le avisó por correo, para no repetir el mismo
+// aviso en cada recarga. Se borra la fila cuando el estudiante deja de estar
+// en riesgo (así, si vuelve a caer en riesgo, se avisa de nuevo).
+model AlertEmailLog {
+  studentId String   @id
+  nivel     String   // amarillo | rojo
+  sentAt    DateTime @default(now())
 }

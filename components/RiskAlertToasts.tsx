@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { RiskyStudent } from "@/lib/risk-alerts";
+import { notifyCoordinatorOfNewAlerts } from "@/app/configuracion/actions";
 
 // Recordamos qué alertas ya cerró el usuario (por pestaña/sesión del
 // navegador) para que no vuelvan a aparecer al navegar entre páginas.
@@ -20,6 +21,16 @@ export default function RiskAlertToasts({ students }: { students: RiskyStudent[]
 
   useEffect(() => {
     setDismissed(readDismissed());
+  }, []);
+
+  // Si el envío por correo está activado en Configuración, avisa al coordinador
+  // de las alertas nuevas (una vez por pestaña; el servidor evita duplicados).
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("risk-alerts-emailed")) return;
+      sessionStorage.setItem("risk-alerts-emailed", "1");
+    } catch {}
+    notifyCoordinatorOfNewAlerts().catch(() => {});
   }, []);
 
   function handleDismiss(id: string) {

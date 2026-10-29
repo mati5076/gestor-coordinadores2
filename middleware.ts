@@ -6,6 +6,8 @@ const PUBLIC_PATHS = ["/login", "/registro"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  // El cron externo no tiene cookie de sesión: se protege con CRON_SECRET en la propia ruta.
+  if (pathname.startsWith("/api/cron/")) return NextResponse.next();
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const session = await verifySessionToken(token);
   const isPublic = PUBLIC_PATHS.includes(pathname);

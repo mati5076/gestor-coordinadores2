@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { computeRisk, StudentDTO, AtencionDTO } from "@/lib/logic";
 
-export type RiskyStudent = { id: string; nombre: string };
+export type RiskyStudent = { id: string; nombre: string; nivel: "amarillo" | "rojo"; carrera: string; matricula: string };
 
 /**
  * Estudiantes actualmente en riesgo (medio o alto, sin abandono registrado)
@@ -29,7 +29,12 @@ export async function getHighRiskStudents(): Promise<RiskyStudent[]> {
     updatedAt: a.updatedAt.toISOString().slice(0, 10),
   }));
 
-  return students
-    .filter((s) => !s.abandono && computeRisk(s, atenciones).level !== "verde")
-    .map((s) => ({ id: s.id, nombre: s.nombre }));
+  const out: RiskyStudent[] = [];
+  for (const s of students) {
+    if (s.abandono) continue;
+    const level = computeRisk(s, atenciones).level;
+    if (level === "verde") continue;
+    out.push({ id: s.id, nombre: s.nombre, nivel: level, carrera: s.carrera, matricula: s.matricula });
+  }
+  return out;
 }

@@ -35,7 +35,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
           <StudentFormModal existing={student} trigger={<button className="btn">Editar</button>} />
         </div>
 
-        <div className="card card-pad" style={{ marginBottom: 16, background: "#FAFBFC" }}>
+        <div className="card card-pad" style={{ marginBottom: 16, background: "#FAFAFA" }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-soft)", marginBottom: 6 }}>FACTORES DE RIESGO</div>
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
             {risk.reasons.map((r, i) => <li key={i} style={{ marginBottom: 3 }}>{r}</li>)}

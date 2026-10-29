@@ -5,11 +5,11 @@ export function TipoDuracionChart({ data }: { data: { tipo: string; prom: number
   return (
     <ResponsiveContainer width="100%" height={220}>
       <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F3" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#EEEEEE" vertical={false} />
         <XAxis dataKey="tipo" tick={{ fontSize: 11 }} />
         <YAxis tick={{ fontSize: 11 }} />
         <Tooltip formatter={(v: number) => [`${v} min`, "Promedio"]} />
-        <Bar dataKey="prom" fill="#2C7A7B" radius={[5, 5, 0, 0]} maxBarSize={36} />
+        <Bar dataKey="prom" fill="#E30613" radius={[5, 5, 0, 0]} maxBarSize={36} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -17,7 +17,7 @@ export function TipoDuracionChart({ data }: { data: { tipo: string; prom: number
 
 export function EstadoCasosChart({ abiertos, seguimiento, cerrados }: { abiertos: number; seguimiento: number; cerrados: number }) {
   const data = [
-    { name: "Abiertos", value: abiertos, color: "#3B82C4" },
+    { name: "Abiertos", value: abiertos, color: "#4A4A4A" },
     { name: "En seguimiento", value: seguimiento, color: "#B8860B" },
     { name: "Cerrados", value: cerrados, color: "#2F9E44" },
   ];

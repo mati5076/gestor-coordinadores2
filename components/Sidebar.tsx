@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/estudiantes", ic: "◍", label: "Estudiantes" },
   { href: "/atenciones", ic: "✎", label: "Atenciones" },
   { href: "/alertas", ic: "⚑", label: "Alertas" },
+  { href: "/configuracion", ic: "⚙", label: "Configuración" },
   // Derivaciones y Reportes siguen exactamente el mismo patrón que
   // /atenciones: una page.tsx server component + actions.ts con "use server".
   // Duplica esas dos carpetas para completarlos (ver README).
