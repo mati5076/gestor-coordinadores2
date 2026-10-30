@@ -2,10 +2,14 @@ import { prisma } from "@/lib/prisma";
 import { computeRisk, StudentDTO, AtencionDTO } from "@/lib/logic";
 import { RiskChip, initials, fmtDate, Topbar } from "@/components/ui";
 import StudentFormModal from "@/components/StudentFormModal";
+import StudentCSVImport from "@/components/StudentCSVImport";
+import StudentCSVExport from "@/components/StudentCSVExport";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export default async function EstudiantesPage() {
-  const [studentsRaw, atencionesRaw] = await Promise.all([prisma.student.findMany(), prisma.atencion.findMany()]);
+  const [studentsRaw, atencionesRaw] = await Promise.all([prisma.student.findMany({ orderBy: { nombre: "asc" } }), prisma.atencion.findMany()]);
   const students: StudentDTO[] = studentsRaw.map((s) => ({ ...s, rendimiento: s.rendimiento as any, riesgoManual: s.riesgoManual as any }));
   const atenciones: AtencionDTO[] = atencionesRaw.map((a) => ({
     ...a, estado: a.estado as any, fecha: a.fecha.toISOString().slice(0, 10),
@@ -15,11 +19,21 @@ export default async function EstudiantesPage() {
 
   return (
     <>
-      <Topbar title="Estudiantes" subtitle="Registro y ficha de cada estudiante en seguimiento." action={<StudentFormModal />} />
+      <Topbar
+        title="Estudiantes"
+        subtitle="Registro y ficha de cada estudiante en seguimiento."
+        action={
+          <div className="topbar-actions">
+            <StudentCSVImport />
+            <StudentCSVExport students={students} />
+            <StudentFormModal />
+          </div>
+        }
+      />
       <div className="content">
         <div className="card">
           {students.length === 0 ? (
-            <div className="empty-state">Aún no hay estudiantes registrados. Agrega el primero con el botón de arriba.</div>
+            <div className="empty-state">Aún no hay estudiantes registrados. Agrega el primero con el botón de arriba o impórtalos desde un CSV.</div>
           ) : (
             <table>
               <thead>
@@ -45,7 +59,10 @@ export default async function EstudiantesPage() {
                       <td><RiskChip level={risk.level} /></td>
                       <td>{atS.length}</td>
                       <td className="muted">{atS.length ? fmtDate(atS[0].fecha) : "—"}</td>
-                      <td style={{ textAlign: "right" }}><Link href={`/estudiantes/${s.id}`} className="muted">Ver ficha →</Link></td>
+                      <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                        <StudentFormModal existing={s} trigger={<button className="btn btn-sm">Editar</button>} />{" "}
+                        <Link href={`/estudiantes/${s.id}`} className="muted">Ver ficha →</Link>
+                      </td>
                     </tr>
                   );
                 })}

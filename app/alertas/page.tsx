@@ -40,17 +40,17 @@ export default async function AlertasPage() {
       <Topbar title="Alertas" subtitle="Estudiantes priorizados que requieren revisión o intervención." />
       <div className="content">
         <div className="grid kpi-grid" style={{ gridTemplateColumns: "repeat(3,1fr)", marginBottom: 18 }}>
-          <div className="card kpi-card">
+          <div className="card kpi-card kpi-accent total">
             <span className="kpi-label">🚨 Estudiantes con alerta</span>
             <span className="kpi-value">{groups.length}</span>
             <span className="kpi-sub">requieren revisión</span>
           </div>
-          <div className="card kpi-card">
+          <div className="card kpi-card kpi-accent alto">
             <span className="kpi-label">🔴 Riesgo alto</span>
             <span className="kpi-value">{riesgoAlto}</span>
             <span className="kpi-sub">prioridad de intervención inmediata</span>
           </div>
-          <div className="card kpi-card">
+          <div className="card kpi-card kpi-accent medio">
             <span className="kpi-label">🟡 Riesgo medio</span>
             <span className="kpi-value">{riesgoMedio}</span>
             <span className="kpi-sub">a seguir de cerca</span>
