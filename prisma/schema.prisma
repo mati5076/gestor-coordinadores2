@@ -2,13 +2,15 @@
 // Para producción multiusuario real, cambia el provider a "postgresql"
 // y DATABASE_URL a tu instancia (ej. Supabase, Neon, RDS) — el resto del
 // código no cambia.
-generator client {
-  provider = "prisma-client-js"
-}
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
 }
 
 model User {
