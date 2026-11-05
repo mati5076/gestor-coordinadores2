@@ -2,10 +2,10 @@
 
 type Row = {
   nombre: string; matricula: string; carrera: string; seccion?: string | null; email?: string | null; telefono?: string | null;
-  inasistencias: number; rendimiento: string; evaluacionesPerdidas: number; riesgoManual: string | null; abandono: boolean;
+  asistencia: number; rendimiento: string; evaluacionesPerdidas: number; riesgoManual: string | null; abandono: boolean;
 };
 
-const HEAD = ["nombre", "matricula", "carrera", "seccion", "email", "telefono", "inasistencias", "rendimiento", "evaluacionesPerdidas", "riesgo", "abandono"];
+const HEAD = ["nombre", "matricula", "carrera", "seccion", "email", "telefono", "asistencia", "rendimiento", "evaluacionesPerdidas", "riesgo", "abandono"];
 
 const cell = (v: unknown) => {
   const s = String(v ?? "");
@@ -24,7 +24,7 @@ export default function StudentCSVExport({ students }: { students: Row[] }) {
   function exportar() {
     const lines = [HEAD.join(",")].concat(
       students.map((s) =>
-        [s.nombre, s.matricula, s.carrera, s.seccion ?? "", s.email ?? "", s.telefono ?? "", s.inasistencias, s.rendimiento,
+        [s.nombre, s.matricula, s.carrera, s.seccion ?? "", s.email ?? "", s.telefono ?? "", s.asistencia, s.rendimiento,
           s.evaluacionesPerdidas, s.riesgoManual ?? "", s.abandono ? "si" : "no"].map(cell).join(",")
       )
     );

@@ -18,7 +18,7 @@ export type StudentDTO = {
   seccion?: string | null;
   email?: string | null;
   telefono?: string | null;
-  inasistencias: number;
+  asistencia: number; // porcentaje de asistencia (0–100)
   rendimiento: "alto" | "medio" | "bajo";
   evaluacionesPerdidas: number;
   riesgoManual: RiskLevel | null;
@@ -49,6 +49,16 @@ export const RISK_LABEL: Record<RiskLevel, string> = {
   rojo: "Riesgo alto",
 };
 
+/** Bajo este % de asistencia el riesgo es alto (mínimo exigido). */
+export const ASISTENCIA_CRITICA = 75;
+/** Bajo este % la asistencia se considera baja (riesgo medio). */
+export const ASISTENCIA_BAJA = 85;
+
+/** Muestra un porcentaje sin ceros sobrantes: 82 → "82%", 82.5 → "82,5%". */
+export function fmtPct(n: number) {
+  return `${Number.isInteger(n) ? n : n.toFixed(1).replace(".", ",")}%`;
+}
+
 export const todayStr = () => new Date().toISOString().slice(0, 10);
 
 export const daysBetween = (a: string, b: string) =>
@@ -62,12 +72,12 @@ export function computeRisk(student: StudentDTO, atenciones: AtencionDTO[]): { l
   const reasons: string[] = [];
   let score = 0;
 
-  if (student.inasistencias >= 5) {
+  if (student.asistencia < ASISTENCIA_CRITICA) {
     score = Math.max(score, 2);
-    reasons.push(`Inasistencia crítica (${student.inasistencias} faltas).`);
-  } else if (student.inasistencias >= 3) {
+    reasons.push(`Asistencia crítica (${fmtPct(student.asistencia)}, mínimo ${ASISTENCIA_CRITICA}%).`);
+  } else if (student.asistencia < ASISTENCIA_BAJA) {
     score = Math.max(score, 1);
-    reasons.push(`Inasistencia reiterada (${student.inasistencias} faltas).`);
+    reasons.push(`Asistencia baja (${fmtPct(student.asistencia)}).`);
   }
 
   if (student.rendimiento === "bajo") {
@@ -118,7 +128,7 @@ export function computeAlerts(students: StudentDTO[], atenciones: AtencionDTO[],
   for (const s of students) {
     if (s.abandono) continue;
     const risk = computeRisk(s, atenciones).level;
-    if (s.inasistencias >= 3) alerts.push({ studentId: s.id, tipo: "Inasistencia reiterada", detalle: `${s.inasistencias} inasistencias registradas.`, risk, ic: "📅" });
+    if (s.asistencia < ASISTENCIA_BAJA) alerts.push({ studentId: s.id, tipo: "Asistencia baja", detalle: `${fmtPct(s.asistencia)} de asistencia (mínimo ${ASISTENCIA_CRITICA}%).`, risk, ic: "📅" });
     if (s.rendimiento === "bajo") alerts.push({ studentId: s.id, tipo: "Bajo rendimiento académico", detalle: "Rendimiento clasificado como bajo.", risk, ic: "📉" });
     if (s.evaluacionesPerdidas >= 1) alerts.push({ studentId: s.id, tipo: "Evaluaciones no rendidas", detalle: `${s.evaluacionesPerdidas} evaluación(es) no rendida(s).`, risk, ic: "📝" });
   }

@@ -26,7 +26,7 @@ const ALIASES: Record<string, string> = {
   seccion: "seccion", materia: "seccion", "seccion materia": "seccion",
   email: "email", correo: "email", "correo electronico": "email",
   telefono: "telefono", celular: "telefono", fono: "telefono",
-  inasistencias: "inasistencias", faltas: "inasistencias",
+  asistencia: "asistencia", "% asistencia": "asistencia", "asistencia %": "asistencia", "porcentaje de asistencia": "asistencia", "porcentaje asistencia": "asistencia",
   rendimiento: "rendimiento",
   "evaluaciones perdidas": "evaluacionesPerdidas", "evaluaciones no rendidas": "evaluacionesPerdidas", evaluacionesperdidas: "evaluacionesPerdidas",
   riesgo: "riesgoManual", "nivel de riesgo": "riesgoManual", "riesgo manual": "riesgoManual", riesgomanual: "riesgoManual",
@@ -77,8 +77,10 @@ export async function importStudentsCSV(formData: FormData): Promise<ImportResul
     const riesgoRaw = norm(get(r, "riesgoManual"));
     if (riesgoRaw && !RIESGOS.includes(riesgoRaw)) return errores.push({ fila, motivo: `Riesgo "${get(r, "riesgoManual")}" inválido (verde, amarillo o rojo).` });
 
-    const inas = get(r, "inasistencias"), evals = get(r, "evaluacionesPerdidas");
-    if ((inas && !/^\d+$/.test(inas)) || (evals && !/^\d+$/.test(evals))) return errores.push({ fila, motivo: "Inasistencias y evaluaciones deben ser números enteros ≥ 0." });
+    const asisRaw = get(r, "asistencia").replace("%", "").replace(",", ".").trim(), evals = get(r, "evaluacionesPerdidas");
+    const asis = asisRaw === "" ? 100 : Number(asisRaw);
+    if (!Number.isFinite(asis) || asis < 0 || asis > 100) return errores.push({ fila, motivo: `Asistencia "${get(r, "asistencia")}" inválida (porcentaje entre 0 y 100).` });
+    if (evals && !/^\d+$/.test(evals)) return errores.push({ fila, motivo: "Evaluaciones no rendidas debe ser un número entero ≥ 0." });
 
     const email = get(r, "email");
     if (email && !/^\S+@\S+\.\S+$/.test(email)) return errores.push({ fila, motivo: `Email "${email}" inválido.` });
@@ -88,7 +90,7 @@ export async function importStudentsCSV(formData: FormData): Promise<ImportResul
       seccion: get(r, "seccion") || null,
       email: email || null,
       telefono: get(r, "telefono") || null,
-      inasistencias: inas ? Number(inas) : 0,
+      asistencia: Math.round(asis * 10) / 10,
       rendimiento: rendRaw || "medio",
       evaluacionesPerdidas: evals ? Number(evals) : 0,
       riesgoManual: riesgoRaw || null,

@@ -19,6 +19,17 @@ model User {
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
+
+  // Intentos fallidos de contraseña seguidos. Al llegar a 3 se ofrece el cambio
+  // de contraseña (por enlace al correo). Se reinicia al entrar bien o al cambiarla.
+  failedAttempts Int @default(0)
+
+  // Enlace de cambio de contraseña: solo se guarda el hash (SHA-256) del token.
+  resetTokenHash String?
+  resetTokenExp  DateTime?
+
+  // Último correo-resumen de alumnos en riesgo enviado a este usuario al ingresar.
+  lastRiskEmailAt DateTime?
 }
 
 model Student {
@@ -29,7 +40,7 @@ model Student {
   seccion              String?
   email                String?
   telefono             String?
-  inasistencias        Int      @default(0)
+  asistencia           Float    @default(100) // porcentaje de asistencia, 0–100
   rendimiento          String   @default("medio") // alto | medio | bajo
   evaluacionesPerdidas Int      @default(0)
   riesgoManual         String?  // verde | amarillo | rojo | null (automático)

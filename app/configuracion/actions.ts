@@ -2,7 +2,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
-import { sendRiskAlertEmail } from "@/lib/alert-email";
+import { sendRiskAlertEmail, sendRiskSummaryToUser, getAlertSettings } from "@/lib/alert-email";
 import { isSmtpConfigured, sendMail } from "@/lib/mailer";
 
 export type ActionState = { ok: boolean; message: string } | undefined;
@@ -53,8 +53,30 @@ export async function resendAllAlerts(): Promise<ActionState> {
   return { ok: r.ok, message: r.message };
 }
 
-/** Llamada automáticamente al abrir la app: avisa solo de alertas nuevas. */
+/**
+ * Se llama automáticamente al abrir la app (ver RiskAlertToasts):
+ *  1. Envía a quien acaba de entrar el resumen de TODOS los estudiantes en riesgo.
+ *  2. Si en Configuración hay un correo de coordinador distinto, le avisa de las alertas nuevas.
+ * Los errores de correo nunca deben romper la navegación, por eso se capturan.
+ */
 export async function notifyCoordinatorOfNewAlerts(): Promise<void> {
-  if (!(await getSession())) return;
-  await sendRiskAlertEmail();
+  const session = await getSession();
+  if (!session) return;
+
+  const settings = await getAlertSettings();
+  const coordinatorEmail = settings?.emailEnabled ? settings.coordinatorEmail?.toLowerCase() : null;
+  const esElMismo = coordinatorEmail === session.email.toLowerCase();
+
+  try {
+    await sendRiskSummaryToUser({ id: session.sub, email: session.email });
+  } catch (e) {
+    console.error("[alertas] no se pudo enviar el resumen al usuario:", e);
+  }
+  if (!esElMismo) {
+    try {
+      await sendRiskAlertEmail();
+    } catch (e) {
+      console.error("[alertas] no se pudo avisar al correo del coordinador:", e);
+    }
+  }
 }

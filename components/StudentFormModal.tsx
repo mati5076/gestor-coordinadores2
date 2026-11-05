@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 type Student = {
   id: string; nombre: string; matricula: string; carrera: string; seccion?: string | null; email?: string | null; telefono?: string | null;
-  inasistencias: number; rendimiento: string; evaluacionesPerdidas: number; riesgoManual: string | null; abandono: boolean;
+  asistencia: number; rendimiento: string; evaluacionesPerdidas: number; riesgoManual: string | null; abandono: boolean;
 };
 
 export default function StudentFormModal({ existing, trigger }: { existing?: Student; trigger?: React.ReactNode }) {
@@ -52,7 +52,7 @@ export default function StudentFormModal({ existing, trigger }: { existing?: Stu
                   <div className="field"><label>Teléfono</label><input name="telefono" defaultValue={existing?.telefono ?? ""} /></div>
                 </div>
                 <div className="field-row">
-                  <div className="field"><label>Inasistencias</label><input type="number" min={0} name="inasistencias" defaultValue={existing?.inasistencias ?? 0} /></div>
+                  <div className="field"><label>Asistencia (%)</label><input type="number" min={0} max={100} step="0.1" name="asistencia" defaultValue={existing?.asistencia ?? 100} /></div>
                   <div className="field"><label>Evaluaciones no rendidas</label><input type="number" min={0} name="evaluacionesPerdidas" defaultValue={existing?.evaluacionesPerdidas ?? 0} /></div>
                 </div>
                 <div className="field">

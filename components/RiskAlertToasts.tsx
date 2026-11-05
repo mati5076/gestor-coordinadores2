@@ -23,13 +23,9 @@ export default function RiskAlertToasts({ students }: { students: RiskyStudent[]
     setDismissed(readDismissed());
   }, []);
 
-  // Si el envío por correo está activado en Configuración, avisa al coordinador
-  // de las alertas nuevas (una vez por pestaña; el servidor evita duplicados).
+  // Al abrir la app se envía por correo el resumen de estudiantes en riesgo a quien entró.
+  // El servidor evita repetirlo en cada recarga (máx. 1 por hora, y siempre uno al iniciar sesión).
   useEffect(() => {
-    try {
-      if (sessionStorage.getItem("risk-alerts-emailed")) return;
-      sessionStorage.setItem("risk-alerts-emailed", "1");
-    } catch {}
     notifyCoordinatorOfNewAlerts().catch(() => {});
   }, []);
 

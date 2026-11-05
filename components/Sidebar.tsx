@@ -16,8 +16,12 @@ const NAV_ITEMS = [
   // Duplica esas dos carpetas para completarlos (ver README).
 ];
 
+// Solo se muestra a la cuenta administradora.
+const ADMIN_ITEMS = [{ href: "/admin/usuarios", ic: "☰", label: "Administración" }];
+
 export default function Sidebar({ user }: { user: SessionUser | null }) {
   const pathname = usePathname();
+  const items = user?.isAdmin ? [...NAV_ITEMS, ...ADMIN_ITEMS] : NAV_ITEMS;
   return (
     <div className="sidebar" style={{ display: "flex", flexDirection: "column" }}>
       <div className="brand">
@@ -28,7 +32,7 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
         </div>
       </div>
       <nav className="nav" style={{ flex: 1 }}>
-        {NAV_ITEMS.map((n) => (
+        {items.map((n) => (
           <Link key={n.href} href={n.href} className={`nav-item ${pathname === n.href ? "active" : ""}`}>
             <span style={{ width: 18, textAlign: "center" }}>{n.ic}</span>
             <span>{n.label}</span>

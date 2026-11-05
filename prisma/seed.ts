@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { ADMIN_EMAIL } from "../lib/auth";
 const prisma = new PrismaClient();
 
 function daysAgo(n: number) {
@@ -15,6 +16,14 @@ async function main() {
   await prisma.user.deleteMany();
 
   // Usuario de prueba para iniciar sesión (correo institucional obligatorio).
+  // Cuenta de administración (la única que puede crear coordinadores nuevos).
+  await prisma.user.create({
+    data: {
+      nombre: "Administrador",
+      email: ADMIN_EMAIL,
+      password: await bcrypt.hash(process.env.ADMIN_PASSWORD || "admin2026", 10),
+    },
+  });
   await prisma.user.create({
     data: {
       nombre: "Coord. Paula Vidal",
@@ -24,16 +33,16 @@ async function main() {
   });
 
   const camila = await prisma.student.create({
-    data: { nombre: "Camila Rojas Fuentes", matricula: "2022-0143", carrera: "Ingeniería Comercial", seccion: "Sección A", email: "camila.rojas@alumnos.cl", inasistencias: 5, rendimiento: "bajo", evaluacionesPerdidas: 2 },
+    data: { nombre: "Camila Rojas Fuentes", matricula: "2022-0143", carrera: "Ingeniería Comercial", seccion: "Sección A", email: "camila.rojas@alumnos.cl", asistencia: 70, rendimiento: "bajo", evaluacionesPerdidas: 2 },
   });
   const matias = await prisma.student.create({
-    data: { nombre: "Matías Sepúlveda León", matricula: "2021-0087", carrera: "Psicología", seccion: "Sección B", email: "matias.sepulveda@alumnos.cl", inasistencias: 1, rendimiento: "alto", evaluacionesPerdidas: 0 },
+    data: { nombre: "Matías Sepúlveda León", matricula: "2021-0087", carrera: "Psicología", seccion: "Sección B", email: "matias.sepulveda@alumnos.cl", asistencia: 94, rendimiento: "alto", evaluacionesPerdidas: 0 },
   });
   const fernanda = await prisma.student.create({
-    data: { nombre: "Fernanda Alarcón Díaz", matricula: "2023-0212", carrera: "Ingeniería Comercial", email: "fernanda.alarcon@alumnos.cl", inasistencias: 3, rendimiento: "medio", evaluacionesPerdidas: 1 },
+    data: { nombre: "Fernanda Alarcón Díaz", matricula: "2023-0212", carrera: "Ingeniería Comercial", email: "fernanda.alarcon@alumnos.cl", asistencia: 82, rendimiento: "medio", evaluacionesPerdidas: 1 },
   });
   const valentina = await prisma.student.create({
-    data: { nombre: "Valentina Muñoz Silva", matricula: "2022-0199", carrera: "Psicología", email: "valentina.munoz@alumnos.cl", inasistencias: 6, rendimiento: "bajo", evaluacionesPerdidas: 2, abandono: true },
+    data: { nombre: "Valentina Muñoz Silva", matricula: "2022-0199", carrera: "Psicología", email: "valentina.munoz@alumnos.cl", asistencia: 64, rendimiento: "bajo", evaluacionesPerdidas: 2, abandono: true },
   });
 
   await prisma.atencion.create({

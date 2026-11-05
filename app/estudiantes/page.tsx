@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { computeRisk, StudentDTO, AtencionDTO } from "@/lib/logic";
+import { computeRisk, fmtPct, ASISTENCIA_CRITICA, ASISTENCIA_BAJA, StudentDTO, AtencionDTO } from "@/lib/logic";
 import { RiskChip, initials, fmtDate, Topbar } from "@/components/ui";
 import StudentFormModal from "@/components/StudentFormModal";
 import StudentCSVImport from "@/components/StudentCSVImport";
@@ -37,7 +37,7 @@ export default async function EstudiantesPage() {
           ) : (
             <table>
               <thead>
-                <tr><th>Estudiante</th><th>Carrera</th><th>Sección</th><th>Riesgo</th><th>Atenciones</th><th>Última atención</th><th></th></tr>
+                <tr><th>Estudiante</th><th>Carrera</th><th>Sección</th><th>Asistencia</th><th>Riesgo</th><th>Atenciones</th><th>Última atención</th><th></th></tr>
               </thead>
               <tbody>
                 {students.map((s) => {
@@ -56,6 +56,7 @@ export default async function EstudiantesPage() {
                       </td>
                       <td>{s.carrera}</td>
                       <td className="muted">{s.seccion || "—"}</td>
+                      <td style={{ fontWeight: 600, color: s.asistencia < ASISTENCIA_CRITICA ? "var(--rojo)" : s.asistencia < ASISTENCIA_BAJA ? "var(--amarillo)" : undefined }}>{fmtPct(s.asistencia)}</td>
                       <td><RiskChip level={risk.level} /></td>
                       <td>{atS.length}</td>
                       <td className="muted">{atS.length ? fmtDate(atS[0].fecha) : "—"}</td>

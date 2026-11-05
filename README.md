@@ -46,38 +46,50 @@ o [Neon](https://neon.tech), ambos con plan gratuito). El resto del código
 
 ```bash
 npm install
-npx prisma db push     # crea las tablas en prisma/dev.db (incluye la tabla User)
-npm run db:seed        # carga estudiantes, atenciones y un usuario de ejemplo
+npx prisma db push     # crea/actualiza las tablas
+npm run db:seed        # carga estudiantes, atenciones, un coordinador y el administrador (¡borra los datos existentes!)
 npm run dev             # http://localhost:3000
 ```
 
-Te va a redirigir a `/login`. Puedes entrar con el usuario de ejemplo del seed:
+Te va a redirigir a `/login`. Cuentas de ejemplo del seed:
 
-- **Correo:** `paula.vidal@inacapmail.cl`
-- **Contraseña:** `inacap2026`
+- Coordinadora: `paula.vidal@inacapmail.cl` / `inacap2026`
+- Administrador: `admin@inacapmail.cl` / el valor de `ADMIN_PASSWORD` (por defecto `admin2026`)
 
-O crear una cuenta nueva en `/registro` (solo se aceptan correos que terminen
-en `@inacapmail.cl`).
+**Base de datos ya en uso (Supabase):** no uses `db:seed` (borra todo). En su lugar:
 
-## Autenticación
+1. Ejecuta `prisma/migrate-asistencia.sql` en el SQL Editor de Supabase (convierte
+   `inasistencias` → `asistencia` en % conservando los datos).
+2. `npx prisma db push` (agrega las columnas nuevas de `User`).
+3. `ADMIN_PASSWORD="una-clave-segura" npm run db:admin` (crea `admin@inacapmail.cl` sin tocar nada más).
 
-- Solo se puede iniciar sesión o registrarse con correos que terminan en
-  **`@inacapmail.cl`** (`lib/auth.ts` → `ALLOWED_EMAIL_DOMAIN`). Cambia esa
-  constante si el dominio institucional es otro.
-- Las contraseñas se guardan hasheadas con `bcryptjs` (tabla `User` en
-  `prisma/schema.prisma`).
-- La sesión se guarda en una cookie httpOnly firmada (HMAC-SHA256, sin
-  librerías externas de sesión) — ver `lib/auth.ts`. La clave de firma vive
-  en la variable de entorno `AUTH_SECRET` (`.env`); en producción cámbiala
-  por una propia (`openssl rand -hex 32`).
-- `middleware.ts` protege **todas** las rutas salvo `/login` y `/registro`:
-  sin sesión válida, redirige a `/login`.
-- El botón ⏻ en la parte inferior del sidebar cierra sesión
-  (`app/login/actions.ts` → `logoutAction`).
+## Autenticación y cuentas
+
+- Solo se puede iniciar sesión con correos **`@inacapmail.cl`** (`lib/auth.ts`).
+- **No hay registro público.** Las cuentas de coordinadores nuevos las crea
+  `admin@inacapmail.cl` desde **Administración** (`/admin/usuarios`, visible solo para esa
+  cuenta; se revalida en el middleware y en cada acción del servidor). Al crear una cuenta
+  se envía al coordinador un correo con un enlace (72 h, un solo uso) para que defina su
+  contraseña; si el correo no sale, el panel muestra el enlace para compartirlo. Cada fila
+  tiene "Enviar enlace de contraseña" para emitir uno nuevo.
+- **Cambio de contraseña tras 3 errores:** los intentos fallidos se cuentan en la base de datos
+  (`User.failedAttempts`). Al tercero, el login muestra el botón **Cambiar contraseña**, que envía
+  un enlace (1 h, un solo uso) al correo de la cuenta. La página `/cambiar-password` pide
+  **solo la contraseña nueva, dos veces**. Se guarda únicamente el hash del enlace.
+- Contraseñas hasheadas con `bcryptjs`; sesión en cookie httpOnly firmada (HMAC-SHA256),
+  clave en `AUTH_SECRET`. `middleware.ts` protege todas las rutas salvo `/login` y `/cambiar-password`.
+- `APP_URL` (opcional) fija la base de los enlaces de los correos; si falta se deduce de la petición.
+
+## Asistencia en porcentaje
+
+`Student.asistencia` es un `Float` de 0 a 100 (por defecto 100). Reglas en `lib/logic.ts`:
+**menos de 75 %** → riesgo alto (`ASISTENCIA_CRITICA`), **menos de 85 %** → riesgo medio
+(`ASISTENCIA_BAJA`). Se captura con decimales (ej. 82,5) en el formulario, se muestra como `%` en la
+lista y la ficha, y en el CSV la columna se llama `asistencia` (acepta `85`, `85%` o `85,5`).
 
 ## Alertas emergentes de riesgo
 
-Al entrar a la app (o recargar), aparece arriba a la derecha una notificación
+Al entrar a la app aparece arriba a la derecha una notificación
 emergente por cada estudiante en riesgo (medio o alto, sin abandono
 registrado): *"Alerta — Alumno con riesgo, favor de poder hacer seguimiento
 al alumno (nombre)"*. Cada una se cierra con la **×** y desaparece; una vez
@@ -100,29 +112,21 @@ así que se puede ajustar en un solo lugar. Los gráficos usan los mismos colore
 `components/DashboardCharts.tsx`. Los semáforos de riesgo (verde/amarillo/rojo) se mantienen
 porque comunican estado, no marca.
 
-## Alertas por correo al coordinador
+## Correo automático de alumnos en riesgo
 
-En **Configuración** (`/configuracion`) hay una opción para que las alertas de riesgo
-también lleguen por correo al coordinador:
+Cada vez que alguien **inicia sesión** (y como máximo una vez por hora al recargar), la app le envía
+un correo con **todos** los estudiantes en riesgo en ese momento (`sendRiskSummaryToUser` en
+`lib/alert-email.ts`, disparado desde `components/RiskAlertToasts.tsx`). Si no hay nadie en riesgo,
+no se envía nada. El envío se "reclama" con un UPDATE condicional en `User.lastRiskEmailAt`, así que
+varias pestañas no duplican el correo.
 
-1. Activa *"Enviar también las alertas al correo del coordinador"* y escribe su correo.
-2. Usa *"Enviar correo de prueba"* para comprobar que llega.
+Además, en **Configuración** se puede indicar un correo de coordinador que recibe un resumen
+de alertas *nuevas* (tabla `AlertEmailLog`; no repite al mismo estudiante) y se puede programar
+`GET /api/cron/alertas-correo` con `Authorization: Bearer <CRON_SECRET>` para avisar aunque nadie
+abra la app.
 
-Cómo funciona:
-- Al abrir la app se envía **un solo correo-resumen** con los estudiantes en riesgo que aún no
-  se habían avisado (o que subieron de medio a alto). No se repite el aviso en cada recarga
-  (tabla `AlertEmailLog`); si un estudiante sale del riesgo y vuelve a entrar, se avisa de nuevo.
-- *"Reenviar todas las alertas vigentes"* manda todas, ignorando el historial.
-- Para avisar aunque nadie abra la app, programa un cron (Vercel Cron, cron-job.org…) que haga
-  `GET /api/cron/alertas-correo` con el header `Authorization: Bearer <CRON_SECRET>`.
-
-Requisitos: completa `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` en `.env`
-(por ejemplo Gmail con contraseña de aplicación u Office 365). Luego:
-
-```bash
-npm install            # instala nodemailer
-npx prisma db push     # crea las tablas AlertSettings y AlertEmailLog
-```
+Requisitos: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` en `.env`
+(ver `.env.example`).
 
 ## Estructura
 

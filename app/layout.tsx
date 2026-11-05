@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 import { getSession } from "@/lib/session";
+import { isAdminEmail } from "@/lib/auth";
 import { getHighRiskStudents } from "@/lib/risk-alerts";
 
 export const metadata: Metadata = {
@@ -11,8 +12,8 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
-  const user = session ? { nombre: session.nombre, email: session.email } : null;
-  // Solo consultamos la base de datos si hay sesión (en /login y /registro no aplica).
+  const user = session ? { nombre: session.nombre, email: session.email, isAdmin: isAdminEmail(session.email) } : null;
+  // Solo consultamos la base de datos si hay sesión (en /login y /cambiar-password no aplica).
   const riskyStudents = session ? await getHighRiskStudents() : [];
 
   return (

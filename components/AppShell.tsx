@@ -4,9 +4,9 @@ import Sidebar from "@/components/Sidebar";
 import RiskAlertToasts from "@/components/RiskAlertToasts";
 import type { RiskyStudent } from "@/lib/risk-alerts";
 
-export type SessionUser = { nombre: string; email: string };
+export type SessionUser = { nombre: string; email: string; isAdmin?: boolean };
 
-const AUTH_ROUTES = ["/login", "/registro"];
+const AUTH_ROUTES = ["/login", "/cambiar-password"];
 
 export default function AppShell({
   children,
@@ -20,7 +20,7 @@ export default function AppShell({
   const pathname = usePathname();
 
   if (AUTH_ROUTES.includes(pathname)) {
-    // Las pantallas de login/registro no llevan sidebar ni barra superior.
+    // Las pantallas de login y cambio de contraseña no llevan sidebar ni barra superior.
     return <>{children}</>;
   }
 

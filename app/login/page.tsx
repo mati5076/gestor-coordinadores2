@@ -1,7 +1,6 @@
 "use client";
 import { useFormState, useFormStatus } from "react-dom";
-import Link from "next/link";
-import { loginAction } from "./actions";
+import { loginAction, requestPasswordResetAction } from "./actions";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -12,8 +11,18 @@ function SubmitButton() {
   );
 }
 
+function ResetButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" className="btn" style={{ width: "100%", justifyContent: "center" }} disabled={pending}>
+      {pending ? "Enviando enlace…" : "Cambiar contraseña"}
+    </button>
+  );
+}
+
 export default function LoginPage() {
   const [state, formAction] = useFormState(loginAction, undefined);
+  const [resetState, resetAction] = useFormState(requestPasswordResetAction, undefined);
 
   return (
     <div className="auth-screen">
@@ -41,8 +50,22 @@ export default function LoginPage() {
           {state?.error && <div className="auth-error">{state.error}</div>}
           <SubmitButton />
         </form>
+        {/* Tras 3 contraseñas incorrectas (contadas en el servidor) se ofrece el cambio de contraseña. */}
+        {state?.canReset && (
+          <form action={resetAction} style={{ marginTop: 14 }}>
+            <input type="hidden" name="email" value={state.email ?? ""} />
+            {resetState?.info ? (
+              <div className="notice notice-ok" style={{ marginBottom: 0 }}>{resetState.info}</div>
+            ) : (
+              <>
+                {resetState?.error && <div className="auth-error">{resetState.error}</div>}
+                <ResetButton />
+              </>
+            )}
+          </form>
+        )}
         <p className="muted" style={{ fontSize: 12.5, marginTop: 16, textAlign: "center" }}>
-          ¿No tienes cuenta? <Link href="/registro">Regístrate aquí</Link>
+          ¿Eres coordinador nuevo? Pide tu cuenta al administrador (admin@inacapmail.cl).
         </p>
       </div>
     </div>

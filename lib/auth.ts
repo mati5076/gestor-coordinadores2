@@ -10,6 +10,8 @@
 // ============================================================================
 
 export const ALLOWED_EMAIL_DOMAIN = "@inacapmail.cl";
+// Única cuenta con permiso para crear cuentas de coordinadores (página /admin/usuarios).
+export const ADMIN_EMAIL = "admin@inacapmail.cl";
 export const SESSION_COOKIE = "session";
 const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 7; // 7 días
 
@@ -23,6 +25,13 @@ export type SessionPayload = {
 export function isAllowedEmail(email: string) {
   return email.trim().toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN);
 }
+
+export function isAdminEmail(email: string | null | undefined) {
+  return (email ?? "").trim().toLowerCase() === ADMIN_EMAIL;
+}
+
+export const MIN_PASSWORD_LENGTH = 6;
+export const MAX_FAILED_ATTEMPTS = 3;
 
 function getSecret(): string {
   const secret = process.env.AUTH_SECRET;

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
+import { SESSION_COOKIE, verifySessionToken, isAdminEmail } from "@/lib/auth";
 
-// Rutas accesibles sin haber iniciado sesión.
-const PUBLIC_PATHS = ["/login", "/registro"];
+// Rutas accesibles sin haber iniciado sesión. Ya no hay registro público: las cuentas
+// de coordinadores las crea el administrador en /admin/usuarios.
+const PUBLIC_PATHS = ["/login", "/cambiar-password"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -13,8 +14,9 @@ export async function middleware(req: NextRequest) {
   const isPublic = PUBLIC_PATHS.includes(pathname);
 
   if (isPublic) {
-    // Si ya inició sesión, no tiene sentido volver a mostrarle login/registro.
-    if (session) {
+    // Si ya inició sesión, no tiene sentido volver a mostrarle el login
+    // (el enlace de cambio de contraseña sí debe funcionar aunque haya sesión abierta).
+    if (session && pathname === "/login") {
       const url = req.nextUrl.clone();
       url.pathname = "/";
       url.search = "";
@@ -26,6 +28,14 @@ export async function middleware(req: NextRequest) {
   if (!session) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  // /admin/* es solo para la cuenta administradora (las acciones además lo revalidan en el servidor).
+  if (pathname.startsWith("/admin") && !isAdminEmail(session.email)) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
     url.search = "";
     return NextResponse.redirect(url);
   }

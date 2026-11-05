@@ -77,3 +77,41 @@ export async function sendRiskAlertEmail(opts: { force?: boolean } = {}): Promis
   );
   return { ok: true, sent: pending.length, message: `Correo enviado a ${settings.coordinatorEmail} (${pending.length} alerta(s)).` };
 }
+
+/**
+ * Envía al usuario que entró a la app un correo con TODOS los estudiantes que están
+ * en riesgo en este momento (no solo los nuevos). No envía nada si no hay nadie en riesgo.
+ *
+ * `throttleMinutes` evita repetir el correo en cada recarga de página: se registra la hora
+ * del último envío en `User.lastRiskEmailAt` y el "reclamo" se hace con un UPDATE condicional,
+ * así dos pestañas abiertas a la vez no mandan el correo dos veces. Al iniciar sesión ese campo
+ * se pone en null, por lo que cada inicio de sesión dispara un correo.
+ */
+export async function sendRiskSummaryToUser(user: { id: string; email: string }, opts: { throttleMinutes?: number } = {}): Promise<SendResult> {
+  if (!isSmtpConfigured()) return { ok: false, sent: 0, message: "SMTP no configurado en el servidor (.env)." };
+
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - (opts.throttleMinutes ?? 60) * 60_000);
+  const claim = await prisma.user.updateMany({
+    where: { id: user.id, OR: [{ lastRiskEmailAt: null }, { lastRiskEmailAt: { lt: cutoff } }] },
+    data: { lastRiskEmailAt: now },
+  });
+  if (claim.count === 0) return { ok: true, sent: 0, message: "Ya se envió un resumen hace poco." };
+
+  const release = () => prisma.user.update({ where: { id: user.id }, data: { lastRiskEmailAt: null } }).catch(() => {});
+
+  const risky = await getHighRiskStudents();
+  if (risky.length === 0) {
+    await release();
+    return { ok: true, sent: 0, message: "No hay estudiantes en riesgo." };
+  }
+
+  risky.sort((a, b) => (a.nivel === b.nivel ? a.nombre.localeCompare(b.nombre) : a.nivel === "rojo" ? -1 : 1));
+  try {
+    await sendMail({ to: user.email, ...buildEmail(risky) });
+  } catch (e) {
+    await release(); // si falló, que se reintente en la próxima entrada
+    return { ok: false, sent: 0, message: `No se pudo enviar el correo: ${(e as Error).message}` };
+  }
+  return { ok: true, sent: risky.length, message: `Correo enviado a ${user.email} (${risky.length} alumno(s) en riesgo).` };
+}
