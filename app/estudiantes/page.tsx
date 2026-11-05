@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { computeRisk, fmtPct, ASISTENCIA_CRITICA, ASISTENCIA_BAJA, StudentDTO, AtencionDTO } from "@/lib/logic";
-import { RiskChip, initials, fmtDate, Topbar } from "@/components/ui";
+import { computeRisk, StudentDTO, AtencionDTO } from "@/lib/logic";
+import { Topbar } from "@/components/ui";
 import StudentFormModal from "@/components/StudentFormModal";
 import StudentCSVImport from "@/components/StudentCSVImport";
-import StudentCSVExport from "@/components/StudentCSVExport";
-import Link from "next/link";
+import StudentsView from "@/components/StudentsView";
+import type { StudentRow, AtencionRow } from "@/components/StudentExport";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +17,23 @@ export default async function EstudiantesPage() {
     fechaCierre: a.fechaCierre?.toISOString().slice(0, 10) ?? null, updatedAt: a.updatedAt.toISOString().slice(0, 10),
   }));
 
+  // Todo se calcula aquí, en el servidor; el componente cliente solo busca, filtra y exporta.
+  const rows: StudentRow[] = students.map((s) => {
+    const ats = atenciones.filter((a) => a.studentId === s.id).sort((a, b) => b.fecha.localeCompare(a.fecha));
+    return {
+      id: s.id, nombre: s.nombre, matricula: s.matricula, carrera: s.carrera, seccion: s.seccion ?? null, email: s.email ?? null,
+      telefono: s.telefono ?? null, asistencia: s.asistencia, rendimiento: s.rendimiento, evaluacionesPerdidas: s.evaluacionesPerdidas,
+      riesgoManual: s.riesgoManual, abandono: s.abandono,
+      riesgo: computeRisk(s, atenciones).level, nAtenciones: ats.length, ultimaAtencion: ats[0]?.fecha ?? null,
+    };
+  });
+  const atRows: AtencionRow[] = atencionesRaw.map((a) => ({
+    studentId: a.studentId, fecha: a.fecha.toISOString().slice(0, 10), responsable: a.responsable, tipo: a.tipo, tema: a.tema,
+    duracionMin: a.duracionMin, estado: a.estado, resueltoPrimerContacto: a.resueltoPrimerContacto,
+    fechaSeguimientoComprometido: a.fechaSeguimientoComprometido?.toISOString().slice(0, 10) ?? null,
+    fechaCierre: a.fechaCierre?.toISOString().slice(0, 10) ?? null, observaciones: a.observaciones, acuerdos: a.acuerdos,
+  }));
+
   return (
     <>
       <Topbar
@@ -25,52 +42,12 @@ export default async function EstudiantesPage() {
         action={
           <div className="topbar-actions">
             <StudentCSVImport />
-            <StudentCSVExport students={students} />
             <StudentFormModal />
           </div>
         }
       />
       <div className="content">
-        <div className="card">
-          {students.length === 0 ? (
-            <div className="empty-state">Aún no hay estudiantes registrados. Agrega el primero con el botón de arriba o impórtalos desde un CSV.</div>
-          ) : (
-            <table>
-              <thead>
-                <tr><th>Estudiante</th><th>Carrera</th><th>Sección</th><th>Asistencia</th><th>Riesgo</th><th>Atenciones</th><th>Última atención</th><th></th></tr>
-              </thead>
-              <tbody>
-                {students.map((s) => {
-                  const risk = computeRisk(s, atenciones);
-                  const atS = atenciones.filter((a) => a.studentId === s.id).sort((a, b) => b.fecha.localeCompare(a.fecha));
-                  return (
-                    <tr key={s.id}>
-                      <td>
-                        <Link href={`/estudiantes/${s.id}`} className="stu-name-cell">
-                          <div className="avatar">{initials(s.nombre)}</div>
-                          <div>
-                            <div style={{ fontWeight: 600 }}>{s.nombre}</div>
-                            <div className="muted" style={{ fontSize: 11.5 }}>{s.matricula}</div>
-                          </div>
-                        </Link>
-                      </td>
-                      <td>{s.carrera}</td>
-                      <td className="muted">{s.seccion || "—"}</td>
-                      <td style={{ fontWeight: 600, color: s.asistencia < ASISTENCIA_CRITICA ? "var(--rojo)" : s.asistencia < ASISTENCIA_BAJA ? "var(--amarillo)" : undefined }}>{fmtPct(s.asistencia)}</td>
-                      <td><RiskChip level={risk.level} /></td>
-                      <td>{atS.length}</td>
-                      <td className="muted">{atS.length ? fmtDate(atS[0].fecha) : "—"}</td>
-                      <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                        <StudentFormModal existing={s} trigger={<button className="btn btn-sm">Editar</button>} />{" "}
-                        <Link href={`/estudiantes/${s.id}`} className="muted">Ver ficha →</Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
+        <StudentsView students={rows} atenciones={atRows} />
       </div>
     </>
   );

@@ -176,6 +176,7 @@ tr:last-child td{border-bottom:none}
 .filter-pill.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
 .filter-pill .pdot{width:9px;height:9px;border-radius:50%;background:#9A9A9A}
 .filter-pill.f-rojo .pdot{background:var(--rojo)}
+.filter-pill.f-verde .pdot{background:var(--verde)}
 .filter-pill.f-amarillo .pdot{background:#E0A800}
 .filter-pill .pcount{min-width:20px;padding:1px 7px;border-radius:20px;background:rgba(0,0,0,.08);font-size:11.5px;text-align:center}
 .filter-pill.active .pcount{background:var(--primary);color:#fff}
@@ -202,6 +203,19 @@ tr:last-child td{border-bottom:none}
 .reason-list b{display:block;color:var(--ink);font-weight:600;font-size:12.5px}
 @media (max-width:720px){.alert-actions{width:100%}.alert-actions .btn{flex:1;justify-content:center}.search-box input{width:100%}.search-box{flex:1}}
 
+
+/* ───────── Filtros, menú de exportar y confirmación ───────── */
+.filters-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-4px 0 16px}
+.select-sm{border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--surface);color:var(--ink);font-size:13px;max-width:100%}
+.select-sm:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(227,6,19,.14)}
+.menu-wrap{position:relative}
+.menu{position:absolute;right:0;top:calc(100% + 6px);min-width:250px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.16);padding:6px;z-index:30}
+.menu button{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:none;background:transparent;border-radius:8px;text-align:left;color:var(--ink)}
+.menu button:hover{background:var(--primary-tint)}
+.menu button b{display:block;font-size:13.5px}
+.menu button small{display:block;font-size:11.5px;color:var(--ink-soft);margin-top:1px}
+.confirm-box{width:380px}
+.confirm-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 
 /* ───────── Celular / tablet ───────── */
 .mobile-bar,.scrim{display:none}
@@ -240,6 +254,8 @@ tr:last-child td{border-bottom:none}
   table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
   th,td{white-space:nowrap}
   .btn{padding:10px 14px}
+  .toolbar-right{width:100%}
+  .toolbar-right .search-box{flex:1}
   .field input,.field select,.field textarea,.search-box input{font-size:16px} /* evita el zoom automático de iOS al escribir */
 }
 
@@ -251,7 +267,10 @@ tr:last-child td{border-bottom:none}
   .form-actions{flex-wrap:wrap}
   .form-actions .btn{flex:1;justify-content:center}
   .import-stats{grid-template-columns:1fr 1fr 1fr;gap:8px}
-  .pillbar{width:100%;overflow-x:auto}
+  .pillbar{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .filter-pill{white-space:nowrap;flex:none}
+  .filters-row .select-sm{flex:1 1 45%;font-size:16px}
+  .confirm-actions .btn{flex:1;justify-content:center}
   .settings-card{max-width:100%}
   .alert-card-head{flex-direction:column}
   .reason-list{grid-template-columns:1fr}
