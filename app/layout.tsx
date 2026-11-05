@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 import { getSession } from "@/lib/session";
@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   title: "Seguimiento — Gestión de Atención Estudiantil",
   description: "Registro, alertas y KPIs de atención estudiantil",
 };
+
+// Necesario para que el celular use su ancho real y no una vista de escritorio reducida.
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#2B2B2B" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { logoutAction } from "@/app/login/actions";
+import LogoutButton from "@/components/LogoutButton";
 import { initials } from "@/components/ui";
 import type { SessionUser } from "@/components/AppShell";
 
@@ -19,7 +19,7 @@ const NAV_ITEMS = [
 // Solo se muestra a la cuenta administradora.
 const ADMIN_ITEMS = [{ href: "/admin/usuarios", ic: "☰", label: "Administración" }];
 
-export default function Sidebar({ user }: { user: SessionUser | null }) {
+export default function Sidebar({ user, onNavigate }: { user: SessionUser | null; onNavigate?: () => void }) {
   const pathname = usePathname();
   const items = user?.isAdmin ? [...NAV_ITEMS, ...ADMIN_ITEMS] : NAV_ITEMS;
   return (
@@ -33,7 +33,7 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
       </div>
       <nav className="nav" style={{ flex: 1 }}>
         {items.map((n) => (
-          <Link key={n.href} href={n.href} className={`nav-item ${pathname === n.href ? "active" : ""}`}>
+          <Link key={n.href} href={n.href} onClick={onNavigate} className={`nav-item ${pathname === n.href ? "active" : ""}`}>
             <span style={{ width: 18, textAlign: "center" }}>{n.ic}</span>
             <span>{n.label}</span>
           </Link>
@@ -46,9 +46,7 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
             <b>{user.nombre}</b>
             <span>{user.email}</span>
           </div>
-          <form action={logoutAction}>
-            <button type="submit" className="logout-btn" title="Cerrar sesión">⏻</button>
-          </form>
+          <LogoutButton className="logout-btn" />
         </div>
       )}
     </div>

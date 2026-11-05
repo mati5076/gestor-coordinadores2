@@ -104,8 +104,8 @@ tr:last-child td{border-bottom:none}
 .user-badge-text{display:flex;flex-direction:column;min-width:0;flex:1}
 .user-badge-text b{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .user-badge-text span{font-size:11px;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.logout-btn{border:none;background:transparent;color:inherit;opacity:.75;font-size:15px;padding:4px;border-radius:6px;flex:none}
-.logout-btn:hover{opacity:1;background:rgba(255,255,255,.1)}
+.logout-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:none;background:transparent;color:inherit;opacity:.8;border-radius:8px;flex:none}
+.logout-btn:hover{opacity:1;background:var(--primary)}
 
 .risk-toast-stack{position:fixed;top:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:10px;max-width:360px;width:calc(100vw - 32px)}
 .risk-toast{display:flex;align-items:flex-start;gap:10px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--rojo);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:12px 12px 12px 13px;animation:risk-toast-in .22s ease-out}
@@ -201,3 +201,58 @@ tr:last-child td{border-bottom:none}
 .reason-ic{flex:none;font-size:15px;line-height:1.2}
 .reason-list b{display:block;color:var(--ink);font-weight:600;font-size:12.5px}
 @media (max-width:720px){.alert-actions{width:100%}.alert-actions .btn{flex:1;justify-content:center}.search-box input{width:100%}.search-box{flex:1}}
+
+
+/* ───────── Celular / tablet ───────── */
+.mobile-bar,.scrim{display:none}
+.icon-btn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;color:inherit;border-radius:8px;flex:none}
+.icon-btn:active{background:rgba(255,255,255,.14)}
+
+@media (max-width:900px){
+  .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .two-col{grid-template-columns:minmax(0,1fr)}
+  .card{min-width:0}
+}
+
+@media (max-width:860px){
+  #shell{display:block}
+  .mobile-bar{display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:40;height:56px;padding:0 10px;background:var(--nav);color:#fff;border-bottom:3px solid var(--primary)}
+  .mobile-bar b{font-family:'Lexend',system-ui,sans-serif;font-size:15px}
+  .mobile-bar .brand-mark{width:28px;height:28px;font-size:13px}
+  /* El menú pasa a ser un panel que se desliza desde la izquierda */
+  .sidebar{position:fixed;left:0;top:0;bottom:0;height:100vh;height:100dvh;width:264px;max-width:84vw;z-index:60;overflow-y:auto;transform:translateX(-100%);transition:transform .22s ease;border-right:none}
+  #shell.nav-open .sidebar{transform:none;box-shadow:0 0 40px rgba(0,0,0,.4)}
+  .scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;opacity:0;pointer-events:none;transition:opacity .22s}
+  #shell.nav-open .scrim{opacity:1;pointer-events:auto}
+  .nav-item{padding:12px 12px;font-size:14.5px}
+
+  .topbar{position:static;padding:14px 16px;flex-wrap:wrap;gap:10px}
+  .topbar>div:first-child{flex:1 1 220px;min-width:0}
+  .topbar h1{font-size:18px}
+  .topbar-actions{width:100%;justify-content:flex-start}
+  .content{padding:16px 14px 48px}
+  .card-pad{padding:14px}
+  .kpi-grid{gap:10px}
+  .kpi-card{padding:12px 13px}
+  .kpi-value{font-size:22px}
+  .risk-toast-stack{top:66px}
+  /* Las tablas se desplazan de lado en vez de aplastar las columnas */
+  table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  th,td{white-space:nowrap}
+  .btn{padding:10px 14px}
+  .field input,.field select,.field textarea,.search-box input{font-size:16px} /* evita el zoom automático de iOS al escribir */
+}
+
+@media (max-width:520px){
+  .field-row{grid-template-columns:1fr}
+  .modal-box{max-width:96vw;max-height:92vh;border-radius:12px}
+  .modal-head{padding:14px 16px}
+  .modal-body{padding:16px}
+  .form-actions{flex-wrap:wrap}
+  .form-actions .btn{flex:1;justify-content:center}
+  .import-stats{grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .pillbar{width:100%;overflow-x:auto}
+  .settings-card{max-width:100%}
+  .alert-card-head{flex-direction:column}
+  .reason-list{grid-template-columns:1fr}
+}
