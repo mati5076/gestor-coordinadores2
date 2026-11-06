@@ -23,7 +23,7 @@ export async function issueResetToken(userId: string, ttlMinutes: number): Promi
 export async function findUserByResetToken(token: string | undefined | null) {
   if (!token || !/^[0-9a-f]{64}$/.test(token)) return null;
   return prisma.user.findFirst({
-    where: { resetTokenHash: hashToken(token), resetTokenExp: { gt: new Date() } },
+    where: { resetTokenHash: hashToken(token), resetTokenExp: { gt: new Date() }, habilitado: true },
   });
 }
 

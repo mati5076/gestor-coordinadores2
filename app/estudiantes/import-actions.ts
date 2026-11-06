@@ -2,6 +2,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { parseCSV } from "@/lib/csv";
+import { MODALIDADES } from "@/lib/logic";
 import { revalidatePath } from "next/cache";
 
 export type ImportResult = {
@@ -28,11 +29,21 @@ const ALIASES: Record<string, string> = {
   telefono: "telefono", celular: "telefono", fono: "telefono",
   asistencia: "asistencia", "% asistencia": "asistencia", "asistencia %": "asistencia", "porcentaje de asistencia": "asistencia", "porcentaje asistencia": "asistencia",
   rendimiento: "rendimiento",
+  modalidad: "modalidad", "tipo de materia": "modalidad", "tipo materia": "modalidad", tipo: "modalidad",
+  "asistencia minima": "asistenciaMinima", "asistencia minima %": "asistenciaMinima", "minimo asistencia": "asistenciaMinima", asistenciaminima: "asistenciaMinima",
   "evaluaciones perdidas": "evaluacionesPerdidas", "evaluaciones no rendidas": "evaluacionesPerdidas", evaluacionesperdidas: "evaluacionesPerdidas",
   riesgo: "riesgoManual", "nivel de riesgo": "riesgoManual", "riesgo manual": "riesgoManual", riesgomanual: "riesgoManual",
   abandono: "abandono",
 };
 
+// Nombres aceptados para el tipo de materia (normalizados) -> valor interno
+const MODALIDAD_ALIASES: Record<string, string> = {
+  electiva: "electiva", "electiva presencial": "electiva", presencial: "electiva",
+  practica: "practica", practico: "practica",
+  semipresencial: "semipresencial", "semi presencial": "semipresencial",
+  online: "online", "en linea": "online", virtual: "online",
+  otra: "otra", otro: "otra",
+};
 const RENDIMIENTOS = ["alto", "medio", "bajo"];
 const RIESGOS = ["verde", "amarillo", "rojo"];
 const esSi = (v: string) => ["si", "s", "true", "1", "x", "yes", "y"].includes(norm(v));
@@ -77,6 +88,19 @@ export async function importStudentsCSV(formData: FormData): Promise<ImportResul
     const riesgoRaw = norm(get(r, "riesgoManual"));
     if (riesgoRaw && !RIESGOS.includes(riesgoRaw)) return errores.push({ fila, motivo: `Riesgo "${get(r, "riesgoManual")}" inválido (verde, amarillo o rojo).` });
 
+    const modRaw = norm(get(r, "modalidad"));
+    const modalidad = modRaw ? MODALIDAD_ALIASES[modRaw] : null;
+    if (modRaw && !modalidad) return errores.push({ fila, motivo: `Tipo de materia "${get(r, "modalidad")}" inválido (electiva, práctica, semipresencial, online u otra).` });
+    const minRaw = get(r, "asistenciaMinima").replace("%", "").replace(",", ".").trim();
+    let asistenciaMinima: number | null = null;
+    if (modalidad === "online") asistenciaMinima = null;
+    else if (modalidad && modalidad !== "otra") asistenciaMinima = MODALIDADES.find((m) => m.value === modalidad)!.min;
+    else if (minRaw !== "") {
+      const n = Number(minRaw);
+      if (!Number.isFinite(n) || n < 0 || n > 100) return errores.push({ fila, motivo: `Asistencia mínima "${get(r, "asistenciaMinima")}" inválida (porcentaje entre 0 y 100).` });
+      asistenciaMinima = Math.round(n * 10) / 10;
+    }
+
     const asisRaw = get(r, "asistencia").replace("%", "").replace(",", ".").trim(), evals = get(r, "evaluacionesPerdidas");
     const asis = asisRaw === "" ? 100 : Number(asisRaw);
     if (!Number.isFinite(asis) || asis < 0 || asis > 100) return errores.push({ fila, motivo: `Asistencia "${get(r, "asistencia")}" inválida (porcentaje entre 0 y 100).` });
@@ -91,6 +115,9 @@ export async function importStudentsCSV(formData: FormData): Promise<ImportResul
       email: email || null,
       telefono: get(r, "telefono") || null,
       asistencia: Math.round(asis * 10) / 10,
+      // Si el CSV no trae estas columnas, no se tocan los valores que ya tiene el estudiante (undefined = Prisma lo ignora)
+      modalidad: !("modalidad" in colIndex) && !("asistenciaMinima" in colIndex) ? undefined : modalidad ?? (asistenciaMinima !== null ? "otra" : null),
+      asistenciaMinima: !("modalidad" in colIndex) && !("asistenciaMinima" in colIndex) ? undefined : asistenciaMinima,
       rendimiento: rendRaw || "medio",
       evaluacionesPerdidas: evals ? Number(evals) : 0,
       riesgoManual: riesgoRaw || null,

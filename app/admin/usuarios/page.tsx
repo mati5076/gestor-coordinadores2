@@ -13,7 +13,7 @@ export default async function AdminUsuariosPage() {
   const users = await prisma.user.findMany({ orderBy: { createdAt: "asc" } });
   return (
     <>
-      <Topbar title="Administración" subtitle="Crea las cuentas de los coordinadores nuevos." />
+      <Topbar title="Administración" subtitle="Crea cuentas de coordinadores y habilita o deshabilita correos." />
       <div className="content" style={{ maxWidth: 860 }}>
         <AdminUsers
           users={users.map((u) => ({
@@ -22,6 +22,7 @@ export default async function AdminUsuariosPage() {
             email: u.email,
             createdAt: u.createdAt.toISOString().slice(0, 10),
             isAdmin: isAdminEmail(u.email),
+            habilitado: u.habilitado,
           }))}
         />
       </div>

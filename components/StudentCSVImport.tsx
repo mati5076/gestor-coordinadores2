@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { importStudentsCSV, ImportResult } from "@/app/estudiantes/import-actions";
 
 const PLANTILLA =
-  "nombre,matricula,carrera,seccion,email,telefono,asistencia,rendimiento,evaluacionesPerdidas,riesgo,abandono\n" +
-  "Ana Pérez Soto,2024-0001,Ingeniería Comercial,Sección A,ana.perez@alumnos.cl,+56912345678,92,medio,0,,no\n";
+  "nombre,matricula,carrera,seccion,modalidad,asistenciaMinima,email,telefono,asistencia,rendimiento,evaluacionesPerdidas,riesgo,abandono\n" +
+  "Ana Pérez Soto,2024-0001,Ingeniería Comercial,Sección A,semipresencial,70,ana.perez@alumnos.cl,+56912345678,92,medio,0,,no\n";
 
 const UploadIcon = ({ size = 15 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -63,7 +63,7 @@ export default function StudentCSVImport() {
             <div className="modal-body">
               <div className="help-box">
                 Sube el archivo con los estudiantes que ya tienes. Columnas obligatorias: <b>nombre, matricula, carrera</b>.
-                Opcionales: seccion, email, telefono, asistencia (porcentaje 0–100), rendimiento (alto/medio/bajo), evaluacionesPerdidas,
+                Opcionales: seccion, modalidad (electiva = 50 %, practica = 60 %, semipresencial = 70 %, online = sin asistencia, otra + asistenciaMinima), email, telefono, asistencia (porcentaje 0–100), rendimiento (alto/medio/bajo), evaluacionesPerdidas,
                 riesgo (verde/amarillo/rojo) y abandono (si/no). Si la matrícula ya existe, el estudiante se
                 <b> actualiza</b>; si no, se <b>crea</b>. Acepta separador coma o punto y coma (Excel).
               </div>

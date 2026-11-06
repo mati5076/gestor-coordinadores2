@@ -180,3 +180,32 @@ en el payload de la sesión (`lib/auth.ts` → `createSessionToken`).
   (un clic, detecta Next.js automáticamente). Si usas SQLite necesitarás un
   volumen persistente o migrar a Postgres — en plataformas serverless como
   Vercel, Postgres es la opción práctica.
+
+
+## Tipo de materia y asistencia mínima
+
+Cada estudiante tiene un **Tipo de materia** (se elige al agregar/editar o con las columnas `modalidad` y
+`asistenciaMinima` del CSV). Define con cuánta asistencia se aprueba:
+
+| Tipo | Asistencia mínima |
+|---|---|
+| Electiva presencial | 50 % |
+| Práctica | 60 % |
+| Semipresencial | 70 % |
+| Online | No lleva asistencia (solo se evalúa) |
+| Otra | El coordinador escribe el mínimo |
+| Sin definir | 75 % (comportamiento anterior) |
+
+El riesgo y las alertas comparan la asistencia con el mínimo de **su** materia: bajo el mínimo = crítica
+(riesgo alto); a menos de 10 puntos del mínimo = baja (riesgo medio). En las materias online la asistencia
+no cuenta; siguen contando rendimiento y evaluaciones no rendidas. Las reglas viven en `lib/logic.ts` (`MODALIDADES`).
+
+## Habilitar / deshabilitar correos (administrador)
+
+En **Administración** (`/admin/usuarios`) cada cuenta tiene un botón **Deshabilitar / Habilitar**. Una cuenta
+deshabilitada no puede iniciar sesión, no puede pedir cambio de contraseña, su sesión abierta se cierra
+en la siguiente navegación y no recibe correos de la página. Habilitarla la deja usable otra vez, con
+la misma contraseña. La cuenta administradora no se puede deshabilitar.
+
+**Base de datos ya en uso:** ejecuta `npx prisma db push` (solo agrega columnas nuevas: `Student.modalidad`,
+`Student.asistenciaMinima` y `User.habilitado`, esta última con valor `true` para las cuentas existentes).

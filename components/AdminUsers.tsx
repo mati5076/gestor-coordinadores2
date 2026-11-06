@@ -1,9 +1,9 @@
 "use client";
 import { useRef, useState, useTransition } from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import { createCoordinatorAction, resendInviteAction, type CrearState } from "@/app/admin/usuarios/actions";
+import { createCoordinatorAction, resendInviteAction, setUserEnabledAction, type CrearState } from "@/app/admin/usuarios/actions";
 
-export type UserRow = { id: string; nombre: string; email: string; createdAt: string; isAdmin: boolean };
+export type UserRow = { id: string; nombre: string; email: string; createdAt: string; isAdmin: boolean; habilitado: boolean };
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -62,24 +62,44 @@ export default function AdminUsers({ users }: { users: UserRow[] }) {
         <div style={{ overflowX: "auto" }}>
           <table>
             <thead>
-              <tr><th>Nombre</th><th>Correo</th><th>Creada</th><th></th></tr>
+              <tr><th>Nombre</th><th>Correo</th><th>Estado</th><th>Creada</th><th></th></tr>
             </thead>
             <tbody>
               {users.map((u) => (
-                <tr key={u.id}>
+                <tr key={u.id} style={u.habilitado ? undefined : { opacity: 0.75 }}>
                   <td><b>{u.nombre}</b>{u.isAdmin && <span className="muted"> · administrador</span>}</td>
                   <td className="muted">{u.email}</td>
+                  <td>
+                    <span className="badge" style={u.habilitado ? { background: "var(--verde-tint)", color: "#1E7A32" } : { background: "#FDECEC", color: "#B3261E" }}>
+                      {u.habilitado ? "Habilitado" : "Deshabilitado"}
+                    </span>
+                  </td>
                   <td className="muted">{u.createdAt}</td>
                   <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                     {!u.isAdmin && (
-                      <button
-                        type="button"
-                        className="btn btn-sm"
-                        disabled={pending}
-                        onClick={() => start(async () => setRowState({ id: u.id, state: await resendInviteAction(u.id) }))}
-                      >
-                        Enviar enlace de contraseña
-                      </button>
+                      <>
+                        {u.habilitado && (
+                          <button
+                            type="button"
+                            className="btn btn-sm"
+                            disabled={pending}
+                            onClick={() => start(async () => setRowState({ id: u.id, state: await resendInviteAction(u.id) }))}
+                          >
+                            Enviar enlace de contraseña
+                          </button>
+                        )}{" "}
+                        <button
+                          type="button"
+                          className={`btn btn-sm ${u.habilitado ? "btn-danger" : "btn-primary"}`}
+                          disabled={pending}
+                          onClick={() => {
+                            if (u.habilitado && !confirm(`¿Deshabilitar ${u.email}? No podrá iniciar sesión ni recibir correos hasta que lo vuelvas a habilitar.`)) return;
+                            start(async () => setRowState({ id: u.id, state: await setUserEnabledAction(u.id, !u.habilitado) }));
+                          }}
+                        >
+                          {u.habilitado ? "Deshabilitar" : "Habilitar"}
+                        </button>
+                      </>
                     )}
                   </td>
                 </tr>

@@ -22,7 +22,7 @@ export default async function EstudiantesPage() {
     const ats = atenciones.filter((a) => a.studentId === s.id).sort((a, b) => b.fecha.localeCompare(a.fecha));
     return {
       id: s.id, nombre: s.nombre, matricula: s.matricula, carrera: s.carrera, seccion: s.seccion ?? null, email: s.email ?? null,
-      telefono: s.telefono ?? null, asistencia: s.asistencia, rendimiento: s.rendimiento, evaluacionesPerdidas: s.evaluacionesPerdidas,
+      telefono: s.telefono ?? null, asistencia: s.asistencia, modalidad: s.modalidad ?? null, asistenciaMinima: s.asistenciaMinima ?? null, rendimiento: s.rendimiento, evaluacionesPerdidas: s.evaluacionesPerdidas,
       riesgoManual: s.riesgoManual, abandono: s.abandono,
       riesgo: computeRisk(s, atenciones).level, nAtenciones: ats.length, ultimaAtencion: ats[0]?.fecha ?? null,
     };

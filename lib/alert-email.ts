@@ -43,6 +43,10 @@ export async function sendRiskAlertEmail(opts: { force?: boolean } = {}): Promis
   if (!settings.coordinatorEmail) return { ok: false, sent: 0, message: "Falta el correo del coordinador." };
   if (!isSmtpConfigured()) return { ok: false, sent: 0, message: "SMTP no configurado en el servidor (.env)." };
 
+  // Si ese correo pertenece a una cuenta deshabilitada, no se le envían avisos.
+  const cuenta = await prisma.user.findUnique({ where: { email: settings.coordinatorEmail.toLowerCase() }, select: { habilitado: true } });
+  if (cuenta && !cuenta.habilitado) return { ok: true, sent: 0, message: "El correo del coordinador pertenece a una cuenta deshabilitada." };
+
   const risky = await getHighRiskStudents();
   const log = await prisma.alertEmailLog.findMany();
   const logMap = new Map(log.map((l) => [l.studentId, l.nivel]));

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { computeRisk, fmtPct, StudentDTO, AtencionDTO } from "@/lib/logic";
+import { computeRisk, fmtPct, modalidadLabel, asistenciaMinimaDe, StudentDTO, AtencionDTO } from "@/lib/logic";
 import { RiskChip, EstadoBadge, initials, fmtDate, Topbar } from "@/components/ui";
 import StudentFormModal from "@/components/StudentFormModal";
 import AtencionFormModal from "@/components/AtencionFormModal";
@@ -29,7 +29,8 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
   const datos: [string, string][] = [
     ["Matrícula", student.matricula], ["Carrera", student.carrera], ["Sección", student.seccion || "—"],
     ["Email", student.email || "—"], ["Teléfono", student.telefono || "—"],
-    ["Asistencia", fmtPct(student.asistencia)], ["Evaluaciones no rendidas", String(student.evaluacionesPerdidas)],
+    ["Tipo de materia", modalidadLabel(student.modalidad)],
+    ["Asistencia", student.modalidad === "online" ? "No aplica (online)" : `${fmtPct(student.asistencia)} (mínimo ${asistenciaMinimaDe(student)}%)`], ["Evaluaciones no rendidas", String(student.evaluacionesPerdidas)],
     ["Rendimiento", student.rendimiento], ["Abandono", student.abandono ? "Sí" : "No"],
   ];
 

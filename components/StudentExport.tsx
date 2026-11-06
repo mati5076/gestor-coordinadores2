@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { RISK_LABEL, RiskLevel } from "@/lib/logic";
+import { RISK_LABEL, RiskLevel, modalidadLabel } from "@/lib/logic";
 import type { SheetSpec } from "@/lib/xlsx";
 
 export type StudentRow = {
@@ -12,6 +12,8 @@ export type StudentRow = {
   email: string | null;
   telefono: string | null;
   asistencia: number;
+  modalidad: string | null;
+  asistenciaMinima: number | null;
   rendimiento: string;
   evaluacionesPerdidas: number;
   riesgoManual: string | null;
@@ -41,7 +43,7 @@ const ESTADO: Record<string, string> = { abierto: "Abierto", seguimiento: "En se
 const RENDIMIENTO: Record<string, string> = { alto: "Alto", medio: "Medio", bajo: "Bajo" };
 
 // Mismas columnas que la plantilla de importación: lo exportado se puede volver a importar tal cual.
-const CSV_HEAD = ["nombre", "matricula", "carrera", "seccion", "email", "telefono", "asistencia", "rendimiento", "evaluacionesPerdidas", "riesgo", "abandono"];
+const CSV_HEAD = ["nombre", "matricula", "carrera", "seccion", "modalidad", "asistenciaMinima", "email", "telefono", "asistencia", "rendimiento", "evaluacionesPerdidas", "riesgo", "abandono"];
 
 const cell = (v: unknown) => {
   const s = String(v ?? "");
@@ -101,7 +103,7 @@ export default function StudentExport({ students, atenciones }: { students: Stud
     setOpen(false);
     const lines = [CSV_HEAD.join(",")].concat(
       students.map((s) =>
-        [s.nombre, s.matricula, s.carrera, s.seccion ?? "", s.email ?? "", s.telefono ?? "", s.asistencia, s.rendimiento,
+        [s.nombre, s.matricula, s.carrera, s.seccion ?? "", s.modalidad ?? "", s.asistenciaMinima ?? "", s.email ?? "", s.telefono ?? "", s.asistencia, s.rendimiento,
           s.evaluacionesPerdidas, s.riesgoManual ?? "", s.abandono ? "si" : "no"].map(cell).join(",")
       )
     );
@@ -121,12 +123,13 @@ export default function StudentExport({ students, atenciones }: { students: Stud
           name: "Estudiantes",
           columns: [
             { header: "Nombre", width: 30 }, { header: "Matrícula", width: 14 }, { header: "Carrera", width: 30 }, { header: "Sección", width: 22 },
+            { header: "Tipo de materia", width: 22 }, { header: "Asistencia mínima (%)", width: 21, type: "pct" },
             { header: "Email", width: 28 }, { header: "Teléfono", width: 16 }, { header: "Asistencia (%)", width: 15, type: "pct" },
             { header: "Rendimiento", width: 13 }, { header: "Evaluaciones no rendidas", width: 24, type: "int" }, { header: "Riesgo", width: 14 },
             { header: "Abandono", width: 11 }, { header: "Atenciones", width: 12, type: "int" }, { header: "Última atención", width: 16, type: "date" },
           ],
           rows: students.map((s) => [
-            s.nombre, s.matricula, s.carrera, s.seccion, s.email, s.telefono, s.asistencia,
+            s.nombre, s.matricula, s.carrera, s.seccion, modalidadLabel(s.modalidad), s.asistenciaMinima, s.email, s.telefono, s.modalidad === "online" ? null : s.asistencia,
             RENDIMIENTO[s.rendimiento] ?? s.rendimiento, s.evaluacionesPerdidas, RISK_LABEL[s.riesgo], s.abandono ? "Sí" : "No",
             s.nAtenciones, s.ultimaAtencion,
           ]),

@@ -19,6 +19,8 @@ export type StudentDTO = {
   email?: string | null;
   telefono?: string | null;
   asistencia: number; // porcentaje de asistencia (0–100)
+  modalidad?: string | null; // electiva | practica | semipresencial | online | otra | null
+  asistenciaMinima?: number | null; // % mínimo para aprobar la materia (null = online / sin definir)
   rendimiento: "alto" | "medio" | "bajo";
   evaluacionesPerdidas: number;
   riesgoManual: RiskLevel | null;
@@ -49,10 +51,43 @@ export const RISK_LABEL: Record<RiskLevel, string> = {
   rojo: "Riesgo alto",
 };
 
-/** Bajo este % de asistencia el riesgo es alto (mínimo exigido). */
+/** Mínimo de asistencia que se usa si la materia no tiene modalidad definida (comportamiento anterior). */
 export const ASISTENCIA_CRITICA = 75;
-/** Bajo este % la asistencia se considera baja (riesgo medio). */
-export const ASISTENCIA_BAJA = 85;
+/** Puntos porcentuales sobre el mínimo hasta los que la asistencia se considera "baja" (riesgo medio). */
+export const ASISTENCIA_MARGEN = 10;
+
+export type Modalidad = "electiva" | "practica" | "semipresencial" | "online" | "otra";
+
+/** Tipos de materia y la asistencia con la que se aprueban. `min: null` = sin asistencia (solo se evalúa). */
+export const MODALIDADES: { value: Modalidad; label: string; min: number | null; desc: string }[] = [
+  { value: "electiva", label: "Electiva presencial", min: 50, desc: "se aprueba con 50 % de asistencia" },
+  { value: "practica", label: "Práctica", min: 60, desc: "se aprueba con 60 % de asistencia" },
+  { value: "semipresencial", label: "Semipresencial", min: 70, desc: "se aprueba con 70 % de asistencia" },
+  { value: "online", label: "Online", min: null, desc: "sin asistencia; solo se evalúa" },
+  { value: "otra", label: "Otra (mínimo personalizado)", min: null, desc: "tú defines el mínimo" },
+];
+
+export const modalidadLabel = (m: string | null | undefined) => MODALIDADES.find((x) => x.value === m)?.label ?? "Sin definir";
+
+/** Materias online: no llevan asistencia, así que no cuenta para el riesgo ni para las alertas. */
+export const sinAsistencia = (s: Pick<StudentDTO, "modalidad">) => s.modalidad === "online";
+
+/** % mínimo de asistencia para aprobar la materia del estudiante (null si es online). */
+export function asistenciaMinimaDe(s: Pick<StudentDTO, "modalidad" | "asistenciaMinima">): number | null {
+  if (s.modalidad === "online") return null;
+  return s.asistenciaMinima ?? ASISTENCIA_CRITICA;
+}
+
+export type AsistenciaEstado = "na" | "critica" | "baja" | "normal";
+
+/** Estado de la asistencia frente al mínimo de su materia: crítica (bajo el mínimo), baja (a menos de 10 puntos) o normal. */
+export function asistenciaEstado(s: Pick<StudentDTO, "modalidad" | "asistenciaMinima" | "asistencia">): AsistenciaEstado {
+  const min = asistenciaMinimaDe(s);
+  if (min === null) return "na";
+  if (s.asistencia < min) return "critica";
+  if (s.asistencia < min + ASISTENCIA_MARGEN) return "baja";
+  return "normal";
+}
 
 /** Muestra un porcentaje sin ceros sobrantes: 82 → "82%", 82.5 → "82,5%". */
 export function fmtPct(n: number) {
@@ -72,12 +107,14 @@ export function computeRisk(student: StudentDTO, atenciones: AtencionDTO[]): { l
   const reasons: string[] = [];
   let score = 0;
 
-  if (student.asistencia < ASISTENCIA_CRITICA) {
+  const asisEstado = asistenciaEstado(student);
+  const asisMin = asistenciaMinimaDe(student);
+  if (asisEstado === "critica") {
     score = Math.max(score, 2);
-    reasons.push(`Asistencia crítica (${fmtPct(student.asistencia)}, mínimo ${ASISTENCIA_CRITICA}%).`);
-  } else if (student.asistencia < ASISTENCIA_BAJA) {
+    reasons.push(`Asistencia crítica (${fmtPct(student.asistencia)}, mínimo ${asisMin}%).`);
+  } else if (asisEstado === "baja") {
     score = Math.max(score, 1);
-    reasons.push(`Asistencia baja (${fmtPct(student.asistencia)}).`);
+    reasons.push(`Asistencia baja (${fmtPct(student.asistencia)}, mínimo ${asisMin}%).`);
   }
 
   if (student.rendimiento === "bajo") {
@@ -128,7 +165,8 @@ export function computeAlerts(students: StudentDTO[], atenciones: AtencionDTO[],
   for (const s of students) {
     if (s.abandono) continue;
     const risk = computeRisk(s, atenciones).level;
-    if (s.asistencia < ASISTENCIA_BAJA) alerts.push({ studentId: s.id, tipo: "Asistencia baja", detalle: `${fmtPct(s.asistencia)} de asistencia (mínimo ${ASISTENCIA_CRITICA}%).`, risk, ic: "📅" });
+    const asisEstado = asistenciaEstado(s);
+    if (asisEstado === "critica" || asisEstado === "baja") alerts.push({ studentId: s.id, tipo: "Asistencia baja", detalle: `${fmtPct(s.asistencia)} de asistencia (mínimo ${asistenciaMinimaDe(s)}%).`, risk, ic: "📅" });
     if (s.rendimiento === "bajo") alerts.push({ studentId: s.id, tipo: "Bajo rendimiento académico", detalle: "Rendimiento clasificado como bajo.", risk, ic: "📉" });
     if (s.evaluacionesPerdidas >= 1) alerts.push({ studentId: s.id, tipo: "Evaluaciones no rendidas", detalle: `${s.evaluacionesPerdidas} evaluación(es) no rendida(s).`, risk, ic: "📝" });
   }

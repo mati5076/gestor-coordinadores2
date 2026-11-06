@@ -2,16 +2,24 @@
 import { useState } from "react";
 import { createStudent, updateStudent, deleteStudent } from "@/app/estudiantes/actions";
 import { useRouter } from "next/navigation";
+import { MODALIDADES, ASISTENCIA_CRITICA } from "@/lib/logic";
 
 type Student = {
   id: string; nombre: string; matricula: string; carrera: string; seccion?: string | null; email?: string | null; telefono?: string | null;
-  asistencia: number; rendimiento: string; evaluacionesPerdidas: number; riesgoManual: string | null; abandono: boolean;
+  asistencia: number; modalidad?: string | null; asistenciaMinima?: number | null; rendimiento: string; evaluacionesPerdidas: number; riesgoManual: string | null; abandono: boolean;
 };
 
 export default function StudentFormModal({ existing, trigger }: { existing?: Student; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const isEdit = !!existing;
+  // Tipo de materia: define con cuánta asistencia se aprueba (online = sin asistencia).
+  const [modalidad, setModalidad] = useState(existing?.modalidad ?? "");
+  const [minPersonal, setMinPersonal] = useState(String(existing?.modalidad === "otra" ? existing?.asistenciaMinima ?? "" : ""));
+  const preset = MODALIDADES.find((m) => m.value === modalidad);
+  const esOnline = modalidad === "online";
+  const esOtra = modalidad === "otra";
+  const minMostrado = esOtra ? minPersonal : preset?.min != null ? String(preset.min) : modalidad === "" ? String(ASISTENCIA_CRITICA) : "";
 
   async function handleSubmit(formData: FormData) {
     if (isEdit) await updateStudent(existing!.id, formData);
@@ -52,7 +60,27 @@ export default function StudentFormModal({ existing, trigger }: { existing?: Stu
                   <div className="field"><label>Teléfono</label><input name="telefono" defaultValue={existing?.telefono ?? ""} /></div>
                 </div>
                 <div className="field-row">
-                  <div className="field"><label>Asistencia (%)</label><input type="number" min={0} max={100} step="0.1" name="asistencia" defaultValue={existing?.asistencia ?? 100} /></div>
+                  <div className="field">
+                    <label>Tipo de materia</label>
+                    <select name="modalidad" value={modalidad} onChange={(e) => setModalidad(e.target.value)}>
+                      <option value="">Sin definir (mínimo {ASISTENCIA_CRITICA}%)</option>
+                      {MODALIDADES.map((m) => <option key={m.value} value={m.value}>{m.label}{m.value !== "otra" ? ` — ${m.min === null ? "sin asistencia" : m.min + "%"}` : ""}</option>)}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Asistencia mínima para aprobar (%)</label>
+                    <input
+                      type="number" min={0} max={100} step="0.1" name="asistenciaMinima"
+                      value={esOnline ? "" : minMostrado}
+                      onChange={(e) => setMinPersonal(e.target.value)}
+                      disabled={!esOtra}
+                      placeholder={esOnline ? "No aplica (online)" : esOtra ? "Ej: 80" : ""}
+                    />
+                  </div>
+                </div>
+                {esOnline && <p className="muted" style={{ fontSize: 12, margin: "-4px 0 12px" }}>Las materias online no llevan asistencia: se evalúan solo por rendimiento y evaluaciones no rendidas.</p>}
+                <div className="field-row">
+                  <div className="field"><label>Asistencia (%)</label><input type="number" min={0} max={100} step="0.1" name="asistencia" defaultValue={existing?.asistencia ?? 100} disabled={esOnline} /></div>
                   <div className="field"><label>Evaluaciones no rendidas</label><input type="number" min={0} name="evaluacionesPerdidas" defaultValue={existing?.evaluacionesPerdidas ?? 0} /></div>
                 </div>
                 <div className="field">

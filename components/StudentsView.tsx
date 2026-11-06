@@ -4,10 +4,11 @@ import Link from "next/link";
 import { RiskChip, initials, fmtDate } from "@/components/ui";
 import StudentFormModal from "@/components/StudentFormModal";
 import StudentExport, { StudentRow, AtencionRow } from "@/components/StudentExport";
-import { ASISTENCIA_BAJA, ASISTENCIA_CRITICA, RiskLevel, fmtPct } from "@/lib/logic";
+import { MODALIDADES, RiskLevel, asistenciaEstado, asistenciaMinimaDe, modalidadLabel, fmtPct } from "@/lib/logic";
 
 type RiesgoFilter = "todos" | RiskLevel;
 type AsistenciaFilter = "todas" | "critica" | "baja" | "normal";
+type ModalidadFilter = "todas" | string;
 
 // Sin tildes y en minúsculas, para que "sepulveda" encuentre "Sepúlveda"
 const norm = (s: string | null | undefined) => (s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -25,12 +26,13 @@ export default function StudentsView({ students, atenciones }: { students: Stude
   const [asistencia, setAsistencia] = useState<AsistenciaFilter>("todas");
   const [rendimiento, setRendimiento] = useState("todos");
   const [abandono, setAbandono] = useState("todos");
+  const [modalidad, setModalidad] = useState<ModalidadFilter>("todas");
 
   const carreras = useMemo(() => [...new Set(students.map((s) => s.carrera))].sort((a, b) => a.localeCompare(b)), [students]);
 
-  const hayFiltros = query.trim() !== "" || riesgo !== "todos" || carrera !== "todas" || asistencia !== "todas" || rendimiento !== "todos" || abandono !== "todos";
+  const hayFiltros = query.trim() !== "" || riesgo !== "todos" || carrera !== "todas" || asistencia !== "todas" || modalidad !== "todas" || rendimiento !== "todos" || abandono !== "todos";
   function limpiar() {
-    setQuery(""); setRiesgo("todos"); setCarrera("todas"); setAsistencia("todas"); setRendimiento("todos"); setAbandono("todos");
+    setQuery(""); setRiesgo("todos"); setCarrera("todas"); setAsistencia("todas"); setModalidad("todas"); setRendimiento("todos"); setAbandono("todos");
   }
 
   // `ignorarRiesgo` sirve para contar cuántos hay en cada nivel respetando el resto de filtros
@@ -40,9 +42,9 @@ export default function StudentsView({ students, atenciones }: { students: Stude
     if (rendimiento !== "todos" && s.rendimiento !== rendimiento) return false;
     if (abandono === "si" && !s.abandono) return false;
     if (abandono === "no" && s.abandono) return false;
-    if (asistencia === "critica" && !(s.asistencia < ASISTENCIA_CRITICA)) return false;
-    if (asistencia === "baja" && !(s.asistencia >= ASISTENCIA_CRITICA && s.asistencia < ASISTENCIA_BAJA)) return false;
-    if (asistencia === "normal" && !(s.asistencia >= ASISTENCIA_BAJA)) return false;
+    if (modalidad !== "todas" && (s.modalidad ?? "sin") !== modalidad) return false;
+    // La asistencia se compara contra el mínimo de cada materia (las online no tienen asistencia)
+    if (asistencia !== "todas" && asistenciaEstado(s) !== asistencia) return false;
     const q = norm(query.trim());
     if (q && ![s.nombre, s.matricula, s.carrera, s.seccion, s.email].some((v) => norm(v).includes(q))) return false;
     return true;
@@ -51,7 +53,7 @@ export default function StudentsView({ students, atenciones }: { students: Stude
   const list = useMemo(
     () => students.filter((s) => coincide(s, false)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [students, query, riesgo, carrera, asistencia, rendimiento, abandono]
+    [students, query, riesgo, carrera, asistencia, modalidad, rendimiento, abandono]
   );
   const counts = useMemo(() => {
     const base = students.filter((s) => coincide(s, true));
@@ -62,7 +64,7 @@ export default function StudentsView({ students, atenciones }: { students: Stude
       rojo: base.filter((s) => s.riesgo === "rojo").length,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [students, query, carrera, asistencia, rendimiento, abandono]);
+  }, [students, query, carrera, asistencia, modalidad, rendimiento, abandono]);
 
   const PILLS: { key: RiesgoFilter; label: string; cls: string }[] = [
     { key: "todos", label: "Todos", cls: "f-todas" },
@@ -106,9 +108,15 @@ export default function StudentsView({ students, atenciones }: { students: Stude
         </select>
         <select className="select-sm" value={asistencia} onChange={(e) => setAsistencia(e.target.value as AsistenciaFilter)} aria-label="Filtrar por asistencia">
           <option value="todas">Toda asistencia</option>
-          <option value="critica">Crítica (menos de {ASISTENCIA_CRITICA}%)</option>
-          <option value="baja">Baja ({ASISTENCIA_CRITICA}% a {ASISTENCIA_BAJA - 1}%)</option>
-          <option value="normal">Normal ({ASISTENCIA_BAJA}% o más)</option>
+          <option value="critica">Crítica (bajo el mínimo de la materia)</option>
+          <option value="baja">Baja (a menos de 10 puntos del mínimo)</option>
+          <option value="normal">Normal</option>
+        </select>
+        <select className="select-sm" value={modalidad} onChange={(e) => setModalidad(e.target.value)} aria-label="Filtrar por tipo de materia">
+          <option value="todas">Todo tipo de materia</option>
+          {MODALIDADES.filter((m) => m.value !== "otra").map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+          <option value="otra">Otra (personalizada)</option>
+          <option value="sin">Sin definir</option>
         </select>
         <select className="select-sm" value={rendimiento} onChange={(e) => setRendimiento(e.target.value)} aria-label="Filtrar por rendimiento">
           <option value="todos">Todo rendimiento</option>
@@ -138,7 +146,7 @@ export default function StudentsView({ students, atenciones }: { students: Stude
         ) : (
           <table>
             <thead>
-              <tr><th>Estudiante</th><th>Carrera</th><th>Sección</th><th>Asistencia</th><th>Riesgo</th><th>Atenciones</th><th>Última atención</th><th></th></tr>
+              <tr><th>Estudiante</th><th>Carrera</th><th>Sección</th><th>Tipo de materia</th><th>Asistencia</th><th>Riesgo</th><th>Atenciones</th><th>Última atención</th><th></th></tr>
             </thead>
             <tbody>
               {list.map((s) => (
@@ -154,7 +162,16 @@ export default function StudentsView({ students, atenciones }: { students: Stude
                   </td>
                   <td>{s.carrera}</td>
                   <td className="muted">{s.seccion || "—"}</td>
-                  <td style={{ fontWeight: 600, color: s.asistencia < ASISTENCIA_CRITICA ? "var(--rojo)" : s.asistencia < ASISTENCIA_BAJA ? "var(--amarillo)" : undefined }}>{fmtPct(s.asistencia)}</td>
+                  <td className="muted" style={{ fontSize: 12.5 }}>{modalidadLabel(s.modalidad)}</td>
+                  {(() => {
+                    const est = asistenciaEstado(s);
+                    if (est === "na") return <td className="muted">Sin asistencia</td>;
+                    return (
+                      <td style={{ fontWeight: 600, color: est === "critica" ? "var(--rojo)" : est === "baja" ? "var(--amarillo)" : undefined }}>
+                        {fmtPct(s.asistencia)} <span className="muted" style={{ fontWeight: 400, fontSize: 11.5 }}>/ mín. {asistenciaMinimaDe(s)}%</span>
+                      </td>
+                    );
+                  })()}
                   <td><RiskChip level={s.riesgo} /></td>
                   <td>{s.nAtenciones}</td>
                   <td className="muted">{s.ultimaAtencion ? fmtDate(s.ultimaAtencion) : "—"}</td>

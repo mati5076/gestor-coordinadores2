@@ -52,8 +52,31 @@ export async function resendInviteAction(userId: string): Promise<CrearState> {
   if (!(await getAdminSession())) return { ok: false, message: "No autorizado." };
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user || isAdminEmail(user.email)) return { ok: false, message: "Usuario no encontrado." };
+  if (!user.habilitado) return { ok: false, message: "La cuenta está deshabilitada. Habilítala primero para enviarle un enlace." };
 
   const r = await invite(user);
   if (r.sent) return { ok: true, message: `Enlace enviado a ${user.email}.` };
   return { ok: true, message: `No se pudo enviar el correo (${r.error}). Comparte este enlace con ${user.nombre}:`, link: r.link };
+}
+
+/** Deshabilita o vuelve a habilitar una cuenta. La cuenta deshabilitada no puede iniciar sesión (ni seguir usando una sesión abierta) ni recibir correos. */
+export async function setUserEnabledAction(userId: string, habilitado: boolean): Promise<CrearState> {
+  const admin = await getAdminSession();
+  if (!admin) return { ok: false, message: "No autorizado." };
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { ok: false, message: "Usuario no encontrado." };
+  if (isAdminEmail(user.email) || user.id === admin.sub) return { ok: false, message: "La cuenta administradora no se puede deshabilitar." };
+
+  await prisma.user.update({
+    where: { id: userId },
+    // Al deshabilitar también se invalida cualquier enlace de contraseña pendiente.
+    data: habilitado ? { habilitado: true } : { habilitado: false, resetTokenHash: null, resetTokenExp: null },
+  });
+  revalidatePath("/admin/usuarios");
+  return {
+    ok: true,
+    message: habilitado
+      ? `${user.email} quedó habilitado: ya puede iniciar sesión.`
+      : `${user.email} quedó deshabilitado: no puede iniciar sesión ni recibir correos de la página.`,
+  };
 }
