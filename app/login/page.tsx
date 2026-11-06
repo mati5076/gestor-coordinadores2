@@ -20,7 +20,7 @@ function ResetButton() {
   );
 }
 
-export default function LoginPage() {
+export default function LoginPage({ searchParams }: { searchParams?: { deshabilitada?: string } }) {
   const [state, formAction] = useFormState(loginAction, undefined);
   const [resetState, resetAction] = useFormState(requestPasswordResetAction, undefined);
 
@@ -47,6 +47,9 @@ export default function LoginPage() {
             <label>Contraseña</label>
             <input required type="password" name="password" autoComplete="current-password" />
           </div>
+          {searchParams?.deshabilitada && !state?.error && (
+            <div className="auth-error">Tu cuenta fue deshabilitada por el administrador. Contacta a admin@inacapmail.cl.</div>
+          )}
           {state?.error && <div className="auth-error">{state.error}</div>}
           <SubmitButton />
         </form>

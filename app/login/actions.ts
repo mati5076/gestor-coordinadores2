@@ -20,6 +20,8 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return { error: "No existe una cuenta con ese correo." };
 
+  if (!user.habilitado) return { error: "Esta cuenta está deshabilitada. Contacta al administrador (admin@inacapmail.cl)." };
+
   const ok = await bcrypt.compare(password, user.password);
   if (!ok) {
     // El conteo vive en la base de datos (no en el navegador) para que no se pueda saltar.
@@ -64,7 +66,7 @@ export async function requestPasswordResetAction(_prev: AuthState, formData: For
   const generic: AuthState = { canReset: true, email, info: `Si la cuenta ${email} existe, te enviamos un enlace para cambiar la contraseña. Revisa tu correo (y la carpeta de spam).` };
 
   const user = email ? await prisma.user.findUnique({ where: { email } }) : null;
-  if (!user || user.failedAttempts < MAX_FAILED_ATTEMPTS) return generic;
+  if (!user || !user.habilitado || user.failedAttempts < MAX_FAILED_ATTEMPTS) return generic;
 
   // Evita disparar un correo por cada clic: si el último enlace se emitió hace menos de 1 minuto, no se emite otro.
   const emitidoHace = user.resetTokenExp ? Date.now() - (user.resetTokenExp.getTime() - RESET_TTL_MIN * 60_000) : Infinity;
