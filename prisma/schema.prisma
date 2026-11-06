@@ -28,6 +28,10 @@ model User {
   resetTokenHash String?
   resetTokenExp  DateTime?
 
+  // Cuenta habilitada para usar la página. El administrador puede deshabilitarla
+  // (no puede iniciar sesión ni recibir correos) y volver a habilitarla.
+  habilitado Boolean @default(true)
+
   // Último correo-resumen de alumnos en riesgo enviado a este usuario al ingresar.
   lastRiskEmailAt DateTime?
 }
@@ -41,6 +45,10 @@ model Student {
   email                String?
   telefono             String?
   asistencia           Float    @default(100) // porcentaje de asistencia, 0–100
+  // Tipo de materia: define con cuánta asistencia se aprueba (ver MODALIDADES en lib/logic.ts).
+  // electiva (50 %) | practica (60 %) | semipresencial (70 %) | online (sin asistencia) | otra (mínimo a mano) | null (sin definir)
+  modalidad            String?
+  asistenciaMinima     Float?   // % mínimo para aprobar la materia; null en online / sin definir
   rendimiento          String   @default("medio") // alto | medio | bajo
   evaluacionesPerdidas Int      @default(0)
   riesgoManual         String?  // verde | amarillo | rojo | null (automático)
