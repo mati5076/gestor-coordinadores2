@@ -3,6 +3,7 @@ import { useState } from "react";
 import { createAtencion, updateAtencion, deleteAtencion } from "@/app/atenciones/actions";
 import { useRouter } from "next/navigation";
 import { TIPOS_ATENCION, AtencionDTO } from "@/lib/logic";
+import AtencionTimer, { TimerStatus, clearAtencionTimer } from "./AtencionTimer";
 
 type StudentOpt = { id: string; nombre: string; matricula: string };
 
@@ -12,10 +13,16 @@ export default function AtencionFormModal({
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const isEdit = !!existing;
+  // Nueva atención: la duración sale del cronómetro. Edición: se mantiene el campo manual.
+  const [manual, setManual] = useState(false);
+  const [timerMin, setTimerMin] = useState(0);
+  const [timerStatus, setTimerStatus] = useState<TimerStatus>("idle");
+  const useTimer = !isEdit && !manual;
+  const canSubmit = !useTimer || timerStatus === "stopped";
 
   async function handleSubmit(formData: FormData) {
     if (isEdit) await updateAtencion(existing!.id, formData);
-    else await createAtencion(formData);
+    else { await createAtencion(formData); clearAtencionTimer(); }
     setOpen(false);
     router.refresh();
   }
@@ -49,15 +56,28 @@ export default function AtencionFormModal({
                   <div className="field"><label>Fecha *</label><input required type="date" name="fecha" defaultValue={existing?.fecha ?? new Date().toISOString().slice(0, 10)} /></div>
                   <div className="field"><label>Responsable *</label><input required name="responsable" defaultValue={existing?.responsable} /></div>
                 </div>
-                <div className="field-row">
-                  <div className="field">
-                    <label>Tipo de atención *</label>
-                    <select required name="tipo" defaultValue={existing?.tipo ?? TIPOS_ATENCION[0]}>
-                      {TIPOS_ATENCION.map((t) => <option key={t}>{t}</option>)}
-                    </select>
-                  </div>
-                  <div className="field"><label>Duración (min) *</label><input required type="number" min={1} name="duracionMin" defaultValue={existing?.duracionMin ?? 30} /></div>
+                <div className="field">
+                  <label>Tipo de atención *</label>
+                  <select required name="tipo" defaultValue={existing?.tipo ?? TIPOS_ATENCION[0]}>
+                    {TIPOS_ATENCION.map((t) => <option key={t}>{t}</option>)}
+                  </select>
                 </div>
+                {useTimer ? (
+                  <div className="field">
+                    <label>Duración *</label>
+                    <AtencionTimer onChange={(m, s) => { setTimerMin(m); setTimerStatus(s); }} />
+                    <input type="hidden" name="duracionMin" value={timerMin} />
+                    <button type="button" className="timer-link" style={{ alignSelf: "flex-start" }} onClick={() => setManual(true)}>
+                      Ingresar duración manualmente
+                    </button>
+                  </div>
+                ) : (
+                  <div className="field">
+                    <label>Duración (min) *</label>
+                    <input required type="number" min={1} name="duracionMin" defaultValue={existing?.duracionMin ?? 30} />
+                    {!isEdit && <button type="button" className="timer-link" style={{ alignSelf: "flex-start" }} onClick={() => setManual(false)}>Usar cronómetro</button>}
+                  </div>
+                )}
                 <div className="field"><label>Tema específico *</label><input required name="tema" defaultValue={existing?.tema} placeholder="Ej: Bajo rendimiento en Cálculo II" /></div>
                 <div className="field"><label>Observaciones</label><textarea name="observaciones" defaultValue={existing?.observaciones ?? ""} /></div>
                 <div className="field"><label>Acuerdos</label><textarea name="acuerdos" defaultValue={existing?.acuerdos ?? ""} /></div>
@@ -84,7 +104,7 @@ export default function AtencionFormModal({
                   {isEdit && <button type="button" className="btn btn-danger" onClick={handleDelete}>Eliminar</button>}
                   <div style={{ flex: 1 }} />
                   <button type="button" className="btn" onClick={() => setOpen(false)}>Cancelar</button>
-                  <button type="submit" className="btn btn-primary">{isEdit ? "Guardar cambios" : "Registrar atención"}</button>
+                  <button type="submit" className="btn btn-primary" disabled={!canSubmit} title={canSubmit ? undefined : "Detén el cronómetro para registrar"}>{isEdit ? "Guardar cambios" : "Registrar atención"}</button>
                 </div>
               </form>
             </div>

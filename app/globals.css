@@ -275,3 +275,24 @@ tr:last-child td{border-bottom:none}
   .alert-card-head{flex-direction:column}
   .reason-list{grid-template-columns:1fr}
 }
+
+/* ===== Cronómetro de atención ===== */
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-danger-solid{background:var(--nav);border-color:var(--nav);color:#fff}
+.btn-danger-solid:hover{background:#000}
+.timer-box{border:1px solid var(--line);border-radius:var(--radius);background:#FAFAFA;padding:14px 16px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.timer-top{width:100%;display:flex;justify-content:space-between;align-items:center}
+.timer-state{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--ink-soft)}
+.timer-dot{width:8px;height:8px;border-radius:50%;background:#bdbdbd}
+.timer-running{border-color:var(--primary);background:var(--primary-tint)}
+.timer-running .timer-dot{background:var(--primary);animation:timer-pulse 1.2s infinite}
+.timer-running .timer-state{color:var(--primary-dark)}
+.timer-paused{border-color:#E8C777;background:var(--amarillo-tint)}
+.timer-paused .timer-dot{background:var(--amarillo)}
+.timer-stopped{border-color:#A9D9B3;background:var(--verde-tint)}
+.timer-stopped .timer-dot{background:var(--verde)}
+.timer-clock{font-family:'Lexend',system-ui,sans-serif;font-size:42px;font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:var(--nav)}
+.timer-actions{display:flex;gap:8px;align-items:center;min-height:38px}
+.timer-result{font-size:13px;color:#1E7A32}
+.timer-link{border:none;background:transparent;color:var(--primary-dark);font-size:12.5px;font-weight:600;padding:0;text-decoration:underline;cursor:pointer}
+@keyframes timer-pulse{0%,100%{opacity:1}50%{opacity:.3}}
